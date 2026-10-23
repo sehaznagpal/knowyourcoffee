@@ -66,7 +66,7 @@ body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-s
   font: 400 32px/normal 'Excon', sans-serif; text-transform: lowercase; color: var(--blue); white-space: nowrap;
 }
 .zone { position: absolute; touch-action: none; }
-.cups { position: absolute; width: 1280px; height: 832px; overflow: hidden; pointer-events: none; }
+.cups { position: absolute; width: 1280px; height: 832px; pointer-events: none; } /* not clipped: the screen edge clips the strip */
 .cup { position: absolute; pointer-events: auto; cursor: pointer; transform-origin: 50% 100%; }
 .tag, .btn {
   position: absolute; display: flex; align-items: center; justify-content: center;
@@ -119,7 +119,7 @@ body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-s
 }
 
 /* hover / tap reveal */
-.cup { transition: translate 200ms ease-out; }
+.cup { transition: translate 200ms ease-out, opacity 200ms ease; }
 .cup.active { translate: 0 -8px; z-index: 2; }
 .cup:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
 .cup .vessel, .cup .liquid, .cup .ribs { position: absolute; inset: 0; pointer-events: none; }
@@ -154,8 +154,25 @@ body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-s
 .sw { position: relative; width: 22px; height: 22px; border: 2px solid var(--ink); display: inline-block; }
 .sw i { position: absolute; inset: 3px; background: radial-gradient(circle, #C9B07E 1px, transparent 1.4px) 0 0 / 5px 5px; }
 
-.tag { transition: opacity 150ms; }
-.has-card .tag { opacity: 0; }
+
+/* dim the other cups and the category tags while one cup is active */
+:root { --dim-opacity: 0.3; }
+.tag { transition: opacity 200ms ease; }
+.cups[data-active] .cup:not(.active), .cups[data-active] .tag { opacity: var(--dim-opacity); }
+
+/* hint under the wordmark: 0.45x its size, 0.5x gap below it */
+.hint {
+  position: absolute; left: 60px; top: 121px; margin: 0; pointer-events: none; text-align: left; text-transform: lowercase;
+  font: 300 14.4px/1.3 'Excon', sans-serif; color: var(--offwhite); opacity: 0.65; transition: opacity 200ms ease;
+}
+.hint > span { display: block; }
+.hint-tap { display: none; }
+.has-card .hint { opacity: 0.25; }
+@media (pointer: coarse) { .hint-hover { display: none; } .hint-tap { display: inline; } }
+@media (prefers-reduced-motion: reduce) {
+  .cup { transition: translate 200ms ease-out; }
+  .tag, .hint { transition: none; }
+}
 
 /* test modal */
 .modal-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(30, 30, 30, 0.6); }
@@ -223,8 +240,8 @@ body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-s
 
 /* table top continues past the stage edges on wide windows */
 .viewport.screen-table::after {
-  content: ''; position: absolute; left: 0; right: 0; top: var(--split); height: calc(84px * var(--s));
-  background: var(--offwhite); border-top: calc(2px * var(--s)) solid var(--ink); border-bottom: calc(2px * var(--s)) solid var(--ink);
+  content: ''; position: absolute; left: 0; right: 0; top: var(--split); height: calc(86px * var(--s)); box-sizing: border-box;
+  background: var(--offwhite); border-top: calc(2px * var(--s)) solid var(--ink); border-bottom: calc(2px * var(--s)) solid #3f3f3f; /* mean of the art's bottom line rows (549-550), measured between the legs */
   --edge: calc((100% - 1280px * var(--s)) / 2);
   mask: linear-gradient(to right, #000 var(--edge), transparent var(--edge), transparent calc(100% - var(--edge)), #000 calc(100% - var(--edge)));
 }

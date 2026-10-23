@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { table, frames } from '../art-loader';
 import { CATEGORIES, DRINKS } from '../data/drinks';
-import { TAG_DEFAULT, TAG_POS, SLOT_PITCH, slotCenter } from '../data/layout';
-import { Mover, easeInOutCubic, easeOutCubic, slotX } from '../logic/loop';
+import { TAG_DEFAULT, TAG_POS, SLOT_PITCH } from '../data/layout';
+import { COUNT, Mover, easeInOutCubic, easeOutCubic, slotX, slotsFor } from '../logic/loop';
 import { ArrowButton } from './ArrowButton';
 import { Cup } from './Cup';
 import { DrinkCard } from './DrinkCard';
@@ -13,6 +13,8 @@ type Props = { scale: number; entering: boolean; active: boolean; onHome: () => 
 const ZONE = { top: 333, height: 291 }; // 40% to 75% of the 832px frame
 const ZONE_PAD = 2000; // the band spans the full viewport width, not just the stage
 const DRAG_THRESHOLD = 6;
+const LINGER_MS = 120; // others stay dimmed this long after the pointer leaves a cup, so crossing the gap does not flicker
+const STAGE = { w: 1280, h: 832 };
 
 const firstOfGroup = CATEGORIES.map((c) => DRINKS.findIndex((d) => d.category === c));
 
@@ -25,6 +27,20 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
   const [open, setOpen] = useState<{ i: number; x: number; pinned: boolean } | null>(null);
   const openRef = useRef(open);
   openRef.current = open;
+  const [lingering, setLingering] = useState(false);
+  const lingerTimer = useRef(0);
+  const [vw, setVw] = useState(window.innerWidth);
+  useEffect(() => {
+    const on = () => setVw(window.innerWidth);
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  // viewport in stage px: the strip is clipped by the screen, not by the stage
+  const viewW = vw / scale;
+  const viewLeft = (STAGE.w - viewW) / 2;
+  const slots = useMemo(() => slotsFor(viewLeft, viewW), [viewLeft, viewW]);
+  const slotsRef = useRef(slots);
+  slotsRef.current = slots;
   const scaleRef = useRef(scale);
   const activeRef = useRef(active);
   scaleRef.current = scale;
@@ -32,23 +48,46 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
 
   useLayoutEffect(() => {
     const apply = (pos: number) => {
-      DRINKS.forEach((_, i) => {
+      const sl = slotsRef.current;
+      for (let i = 0; i < sl.count; i++) {
         const el = cupEls.current[i];
-        if (el) el.style.transform = `translateX(${slotX(i, pos)}px)`;
-      });
-      CATEGORIES.forEach((c, k) => {
-        const el = tagEls.current[k];
-        if (el) el.style.transform = `translateX(${slotX(firstOfGroup[k], pos) + (TAG_POS[c] ?? TAG_DEFAULT).dx}px)`;
-      });
+        if (el) el.style.transform = `translateX(${slotX(i, pos, sl)}px)`;
+      }
+      for (let r = 0; r < sl.count / COUNT; r++) {
+        CATEGORIES.forEach((c, k) => {
+          const el = tagEls.current[r * CATEGORIES.length + k];
+          if (el) el.style.transform = `translateX(${slotX(r * COUNT + firstOfGroup[k], pos, sl) + (TAG_POS[c] ?? TAG_DEFAULT).dx}px)`;
+        });
+      }
     };
     mover.current = new Mover(apply);
     return () => mover.current?.dispose();
   }, []);
 
-  const show = (i: number, pinned: boolean) => setOpen({ i, x: slotX(i, mover.current!.pos), pinned });
+  // the cup list changes with the viewport size: put every cup back where the loop says it is
+  useLayoutEffect(() => { mover.current?.refresh(); }, [slots]);
+
+  const show = (i: number, pinned: boolean) => {
+    clearTimeout(lingerTimer.current);
+    setLingering(false);
+    setOpen({ i, x: slotX(i, mover.current!.pos, slotsRef.current), pinned });
+  };
+  // pointer left the cup: the card closes now, the other cups stay dimmed for LINGER_MS
+  const release = () => {
+    setOpen(null);
+    setLingering(true);
+    clearTimeout(lingerTimer.current);
+    lingerTimer.current = window.setTimeout(() => setLingering(false), LINGER_MS);
+  };
+  // drag, arrow, wheel, Esc, outside click: everything returns to full opacity at once
+  const closeNow = () => {
+    clearTimeout(lingerTimer.current);
+    setLingering(false);
+    setOpen(null);
+  };
 
   const nudge = (n: number, dur: number) => {
-    setOpen(null);
+    closeNow();
     const m = mover.current!;
     m.animateTo(Math.round(m.target) + n, dur, easeInOutCubic);
   };
@@ -68,14 +107,14 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
     const onWheel = (e: WheelEvent) => {
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
       e.preventDefault();
-      setOpen(null);
+      closeNow();
       const m = mover.current!;
       m.set(m.pos + e.deltaX / scaleRef.current / SLOT_PITCH);
       clearTimeout(idle);
       idle = window.setTimeout(settle, 140);
     };
-    const away = (e: PointerEvent) => { if (!(e.target as Element).closest('.cup')) setOpen(null); };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(null); };
+    const away = (e: PointerEvent) => { if (!(e.target as Element).closest('.cup')) closeNow(); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') closeNow(); };
     document.addEventListener('pointerdown', away);
     window.addEventListener('keydown', esc);
     window.addEventListener('keydown', onKey);
@@ -87,6 +126,7 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
       window.removeEventListener('keydown', onKey);
       zone.removeEventListener('wheel', onWheel);
       clearTimeout(idle);
+      clearTimeout(lingerTimer.current);
     };
   }, []);
 
@@ -105,7 +145,7 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
     if (!d.moved) {
       if (Math.abs(dx) < DRAG_THRESHOLD) return;
       d.moved = true;
-      setOpen(null);
+      closeNow();
       mover.current!.cancel();
       zoneEl.current!.setPointerCapture(e.pointerId);
     }
@@ -134,6 +174,10 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
     <div className={`table-screen${entering ? ' entering' : ''}${open ? ' has-card' : ''}`}>
       <div className="frames" dangerouslySetInnerHTML={{ __html: frames }} />
       <button type="button" className="wordmark" onClick={onHome}>know your coffee</button>
+      <p className="hint">
+        <span><span className="hint-hover">hover over any cup</span><span className="hint-tap">tap any cup</span></span>
+        <span>to see what's inside</span>
+      </p>
       <div className="table-art" dangerouslySetInnerHTML={{ __html: table }} />
       <div
         className="zone"
@@ -145,33 +189,38 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
         onPointerCancel={endDrag}
         onClickCapture={(e) => { if (suppressClick.current) e.stopPropagation(); }}
       >
-        <div className="cups" style={{ left: ZONE_PAD, top: -ZONE.top }}>
-          {DRINKS.map((d, i) => (
+        <div className="cups" data-active={open || lingering ? '' : undefined} style={{ left: ZONE_PAD, top: -ZONE.top }}>
+          {Array.from({ length: slots.count }, (_, i) => {
+            const d = DRINKS[i % COUNT];
+            const x = slotX(i, 0, slots);
+            const slot = (x - viewLeft) / SLOT_PITCH; // 0 at the left screen edge
+            return (
             <Cup
-              key={d.id}
+              key={`${d.id}-${Math.floor(i / COUNT)}`}
               drink={d}
-              x={slotX(i, 0)}
-              popDelay={i <= 6 ? i * 30 : undefined}
+              x={x}
+              popDelay={slot > -1 && slot < viewW / SLOT_PITCH + 1 ? Math.max(0, slot) * 30 : undefined}
               active={open?.i === i}
               refCb={(el) => { cupEls.current[i] = el; }}
               onEnter={() => { if (!openRef.current?.pinned) show(i, false); }}
-              onLeave={() => { if (!openRef.current?.pinned) setOpen(null); }}
-              onTap={(type) => { if (type === 'touch' && openRef.current?.i === i && openRef.current.pinned) setOpen(null); else show(i, true); }}
+              onLeave={() => { if (!openRef.current?.pinned) release(); }}
+              onTap={(type) => { if (type === 'touch' && openRef.current?.i === i && openRef.current.pinned) closeNow(); else show(i, true); }}
               onFocus={() => { if (!openRef.current?.pinned) show(i, false); }}
-              onBlur={() => { if (!openRef.current?.pinned) setOpen(null); }}
+              onBlur={() => { if (!openRef.current?.pinned) release(); }}
             />
-          ))}
-          {CATEGORIES.map((c, k) => {
+            );
+          })}
+          {Array.from({ length: slots.count / COUNT }, (_, r) => CATEGORIES.map((c, k) => {
             const pos = TAG_POS[c] ?? TAG_DEFAULT;
             return (
-              <span key={c} className="tag" ref={(el) => { tagEls.current[k] = el; }} style={{ left: 0, top: pos.y, transform: `translateX(${slotCenter(firstOfGroup[k]) + pos.dx}px)` }}>
+              <span key={`${c}-${r}`} className="tag" ref={(el) => { tagEls.current[r * CATEGORIES.length + k] = el; }} style={{ left: 0, top: pos.y, transform: `translateX(${slotX(r * COUNT + firstOfGroup[k], 0, slots) + pos.dx}px)` }}>
                 {c}
               </span>
             );
-          })}
+          }))}
         </div>
       </div>
-      {open ? <DrinkCard drink={DRINKS[open.i]} x={open.x} /> : null}
+      {open ? <DrinkCard drink={DRINKS[open.i % COUNT]} x={open.x} /> : null}
       <ArrowButton dir="left" onClick={() => nudge(-3, 600)} />
       <ArrowButton dir="right" onClick={() => nudge(3, 600)} />
       <Legend />

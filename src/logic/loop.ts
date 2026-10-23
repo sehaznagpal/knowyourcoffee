@@ -1,10 +1,19 @@
 import { FIRST_CENTER, SLOT_PITCH } from '../data/layout';
 
-export const COUNT = 18;
-const LO = -2; // a cup wraps while it is off-screen: slots span [-2, 16), i.e. x in [-203, 3172)
+export const COUNT = 18; // drinks in the sequence
 
-export const wrap = (s: number) => ((((s - LO) % COUNT) + COUNT) % COUNT) + LO;
-export const slotX = (index: number, pos: number) => FIRST_CENTER + wrap(index - pos) * SLOT_PITCH;
+/** Slots the strip spans: [lo, lo + count). A cup wraps while it is off-screen, so the strip covers the viewport plus 2 cups each side. */
+export type Slots = { lo: number; count: number };
+
+/** `viewW` / `viewLeft`: visible width and left edge in stage px. `count` is a multiple of COUNT so the drink sequence repeats cleanly. */
+export function slotsFor(viewLeft: number, viewW: number): Slots {
+  const lo = Math.floor((viewLeft - FIRST_CENTER) / SLOT_PITCH) - 2;
+  const need = Math.ceil(viewW / SLOT_PITCH) + 5;
+  return { lo, count: COUNT * Math.ceil(need / COUNT) };
+}
+
+export const wrap = (s: number, { lo, count }: Slots) => ((((s - lo) % count) + count) % count) + lo;
+export const slotX = (index: number, pos: number, slots: Slots) => FIRST_CENTER + wrap(index - pos, slots) * SLOT_PITCH;
 
 export const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 export const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -35,6 +44,11 @@ export class Mover {
       this.raf = t < 1 ? requestAnimationFrame(tick) : 0;
     };
     this.raf = requestAnimationFrame(tick);
+  }
+
+  /** Re-report the current position (after the cup list changed). */
+  refresh() {
+    this.onChange(this.pos);
   }
 
   cancel() {
