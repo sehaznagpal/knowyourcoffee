@@ -220,3 +220,11 @@ body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-s
 .oops { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 20px 28px; display: flex; flex-direction: column; gap: 14px; align-items: center;
   background: var(--beige); border: 2px solid var(--ink); box-shadow: var(--shadow); font: 400 20px 'Excon', sans-serif; }
 .oops p { margin: 0; }
+
+/* table top continues past the stage edges on wide windows */
+.viewport.screen-table::after {
+  content: ''; position: absolute; left: 0; right: 0; top: var(--split); height: calc(84px * var(--s));
+  background: var(--offwhite); border-top: calc(2px * var(--s)) solid var(--ink); border-bottom: calc(2px * var(--s)) solid var(--ink);
+  --edge: calc((100% - 1280px * var(--s)) / 2);
+  mask: linear-gradient(to right, #000 var(--edge), transparent var(--edge), transparent calc(100% - var(--edge)), #000 calc(100% - var(--edge)));
+}
