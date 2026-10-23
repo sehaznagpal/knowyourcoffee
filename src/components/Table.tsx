@@ -40,8 +40,6 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
   const viewW = vw / scale;
   const viewLeft = (STAGE.w - viewW) / 2;
   const slots = useMemo(() => slotsFor(viewLeft, viewW), [viewLeft, viewW]);
-  // wordmark and hint hug the screen edge with the arrows' margin (24px); at design width they keep the Figma 60px
-  const markLeft = viewLeft + Math.max(ARROW_INSET, 60 + 2 * viewLeft);
   const slotsRef = useRef(slots);
   slotsRef.current = slots;
   const scaleRef = useRef(scale);
@@ -176,8 +174,8 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
   return (
     <div className={`table-screen${entering ? ' entering' : ''}${open ? ' has-card' : ''}`}>
       <div className="frames" dangerouslySetInnerHTML={{ __html: frames }} />
-      <button type="button" className="wordmark" style={{ left: markLeft }} onClick={onHome}>know your coffee</button>
-      <p className="hint" style={{ left: markLeft }}>
+      <button type="button" className="wordmark" onClick={onHome}>know your coffee</button>
+      <p className="hint">
         <span><span className="hint-hover">hover over any cup</span><span className="hint-tap">tap any cup</span></span>
         <span>to see what's inside</span>
       </p>
