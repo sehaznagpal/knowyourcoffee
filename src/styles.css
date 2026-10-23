@@ -39,3 +39,45 @@ body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-s
   align-items: center; justify-content: center; font-weight: 300; font-size: 24px;
 }
 @media (orientation: portrait) and (max-width: 820px) { .rotate-note { display: flex; } }
+
+/* table screen */
+.viewport.screen-table {
+  background:
+    linear-gradient(var(--ink-wall) 0 0) top / 100% var(--split) no-repeat,
+    var(--beige);
+}
+.viewport.screen-table::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: var(--split);
+  background-image:
+    linear-gradient(to bottom, var(--grid) 0 2px, transparent 2px),
+    linear-gradient(to right, var(--grid) 0 2px, transparent 2px);
+  background-size: calc(20px * var(--s)) calc(20px * var(--s));
+  background-position: calc(-1px * var(--s)) calc(-1px * var(--s));
+}
+:root { --ink-wall: #1e1e1e; --grid: #272727; }
+.stage { z-index: 1; }
+
+.table-screen { position: absolute; inset: 0; }
+.frames { position: absolute; left: 909.5px; top: 95px; width: 294px; height: 204px; pointer-events: none; }
+.table-art { position: absolute; left: 0; top: 465px; width: 1280px; height: 368px; pointer-events: none; }
+.frames svg, .table-art svg, .cup svg { display: block; width: 100%; height: 100%; }
+.wordmark {
+  position: absolute; left: 60px; top: 60px; height: 45px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 400 32px/normal 'Excon', sans-serif; text-transform: lowercase; color: var(--blue); white-space: nowrap;
+}
+.cups { position: absolute; left: 0; top: 0; width: 1280px; height: 832px; overflow: hidden; pointer-events: none; }
+.cup { position: absolute; pointer-events: auto; cursor: pointer; }
+.tag, .btn {
+  position: absolute; display: flex; align-items: center; justify-content: center;
+  background: var(--blue); border: 2px solid var(--ink); box-shadow: var(--shadow); color: var(--ink);
+  font: 400 20px/normal 'Excon', sans-serif; text-transform: lowercase; white-space: nowrap;
+}
+.tag { padding: 4px; box-sizing: content-box; margin: -2px 0 0 -2px; }
+.btn { cursor: pointer; padding: 8px; font-size: 24px; text-transform: uppercase; }
+.test-btn { left: 630px; top: 720px; width: 301px; height: 34px; box-sizing: content-box; }
+.legend {
+  position: absolute; left: 330px; top: 735px; width: 180px; height: 34px; display: flex; align-items: center; gap: 7px;
+  padding: 0; border: 0; background: none; cursor: pointer; color: var(--ink);
+  font: 300 24px/1 'Excon', sans-serif; letter-spacing: -0.96px; white-space: nowrap;
+}
+.legend-help { width: 32px; height: 34px; border: 1px solid var(--ink); border-radius: 999px; display: flex; align-items: center; justify-content: center; }
