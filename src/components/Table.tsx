@@ -15,6 +15,7 @@ const ZONE_PAD = 2000; // the band spans the full viewport width, not just the s
 const DRAG_THRESHOLD = 6;
 const LINGER_MS = 120; // others stay dimmed this long after the pointer leaves a cup, so crossing the gap does not flicker
 const STAGE = { w: 1280, h: 832 };
+const ARROW_INSET = 24; // arrows sit 24px inside the screen edges
 
 const firstOfGroup = CATEGORIES.map((c) => DRINKS.findIndex((d) => d.category === c));
 
@@ -179,6 +180,13 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
         <span>to see what's inside</span>
       </p>
       <div className="table-art" dangerouslySetInnerHTML={{ __html: table }} />
+      {viewW > STAGE.w + 1 ? (
+        <>
+          {/* the art ends the table with a short vertical line at each stage edge; hide it where the band continues */}
+          <div className="band-cap" style={{ left: 0 }} />
+          <div className="band-cap" style={{ left: STAGE.w - 4 }} />
+        </>
+      ) : null}
       <div
         className="zone"
         ref={zoneEl}
@@ -221,8 +229,8 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
         </div>
       </div>
       {open ? <DrinkCard drink={DRINKS[open.i % COUNT]} x={open.x} /> : null}
-      <ArrowButton dir="left" onClick={() => nudge(-3, 600)} />
-      <ArrowButton dir="right" onClick={() => nudge(3, 600)} />
+      <ArrowButton dir="left" left={viewLeft + ARROW_INSET} onClick={() => nudge(-3, 600)} />
+      <ArrowButton dir="right" left={viewLeft + viewW - ARROW_INSET - 56} onClick={() => nudge(3, 600)} />
       <Legend />
       <button type="button" className="btn test-btn" onClick={onTest}>test what you learned</button>
     </div>

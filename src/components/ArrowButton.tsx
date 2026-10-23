@@ -1,10 +1,11 @@
-type Props = { dir: 'left' | 'right'; onClick: () => void };
+type Props = { dir: 'left' | 'right'; onClick: () => void; left: number }; // left: stage px, so the arrow can sit at the screen edge
 
-export function ArrowButton({ dir, onClick }: Props) {
+export function ArrowButton({ dir, onClick, left }: Props) {
   return (
     <button
       type="button"
       className={`arrow-btn arrow-${dir}`}
+      style={{ left }}
       aria-label={dir === 'left' ? 'Previous drinks' : 'Next drinks'}
       onClick={onClick}
     >
