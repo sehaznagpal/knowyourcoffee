@@ -1,0 +1,18 @@
+@font-face {
+  font-family: 'Excon';
+  src: url('../fonts/Excon-Variable.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: block;
+}
+
+:root {
+  --beige: #f4f0e4;
+  --offwhite: #f7f5f1;
+  --ink: #1e1e1e;
+  --blue: #8fe5ff;
+  --shadow: 4px 4px 0 var(--ink);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-serif; }
