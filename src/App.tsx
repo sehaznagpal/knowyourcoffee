@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Landing } from './components/Landing';
 import { Table } from './components/Table';
+import { TestModal } from './components/TestModal';
 
 const FRAME = { w: 1280, h: 832 };
 const DOOR_CENTER = { x: 700, y: 480 };
@@ -26,10 +27,10 @@ const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)'
 export default function App() {
   const params = new URLSearchParams(window.location.search);
   const staticMode = params.get('static') === '1';
-  const [phase, setPhase] = useState<Phase>(params.get('screen') === 'table' ? 'table' : 'landing');
+  const [phase, setPhase] = useState<Phase>(params.get('screen') === 'table' || params.get('test') === '1' ? 'table' : 'landing');
   const [entering, setEntering] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
-  const [, setIsTestOpen] = useState(false);
+  const [isTestOpen, setIsTestOpen] = useState(params.get('test') === '1');
   const scale = useStageScale();
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
@@ -75,7 +76,7 @@ export default function App() {
         style={{ width: FRAME.w, height: FRAME.h, transform: `translate(-50%, -50%) scale(${scale})` }}
       >
         {onTable ? (
-          <Table scale={scale} entering={entering} active={phase === 'table'} onHome={goHome} onTest={() => setIsTestOpen(true)} />
+          <Table scale={scale} entering={entering} active={phase === 'table' && !isTestOpen} onHome={goHome} onTest={() => setIsTestOpen(true)} />
         ) : (
           <Landing onStart={start} zooming={phase === 'zoom'} />
         )}
@@ -86,6 +87,7 @@ export default function App() {
           style={{ left: cx - radius, top: cy - radius, width: radius * 2, height: radius * 2 }}
         />
       ) : null}
+      {isTestOpen ? <TestModal onClose={() => setIsTestOpen(false)} /> : null}
       <div className="rotate-note">rotate your phone</div>
     </div>
   );

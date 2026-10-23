@@ -156,3 +156,67 @@ body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-s
 
 .tag { transition: opacity 150ms; }
 .has-card .tag { opacity: 0; }
+
+/* test modal */
+.modal-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(30, 30, 30, 0.6); }
+.modal-fit { position: absolute; left: 50%; top: 50%; transform-origin: center; }
+.modal {
+  position: relative; width: 100%; height: 100%; padding: 22px 28px 16px; display: flex; flex-direction: column; outline: none;
+  background: var(--beige); border: 2px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); font-family: 'Excon', sans-serif;
+}
+.modal-x {
+  position: absolute; right: 14px; top: 14px; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--blue); border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); cursor: pointer;
+}
+.modal header { display: flex; flex-direction: column; gap: 2px; height: 86px; }
+.m-small { font-weight: 300; font-size: 22px; letter-spacing: -0.5px; }
+.m-name { font-weight: 700; font-size: 46px; line-height: 1.05; text-transform: lowercase; }
+.m-body { flex: 1; display: flex; gap: 24px; min-height: 0; }
+.m-glass { position: relative; width: 217px; flex: none; }
+.stream { position: absolute; left: 50%; top: -6px; width: 5px; height: 110px; margin-left: -2px; border: 1.5px solid var(--ink); transform-origin: top; animation: stream 420ms ease-out forwards; pointer-events: none; }
+@keyframes stream { 0% { transform: scaleY(0); opacity: 1; } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+.glass { position: relative; overflow: visible; }
+.glass-inner { position: absolute; left: 0; top: 0; transform-origin: top left; }
+.glass .vessel, .glass .liquid { position: absolute; inset: 0; pointer-events: none; }
+.glass .vessel svg { display: block; width: 100%; height: 100%; }
+.glass .layer { transform: scaleY(1); transition: none; animation: pour 320ms ease-out; }
+@keyframes pour { from { transform: scaleY(0.2); } }
+.m-side { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.shelf { display: flex; flex-direction: column; gap: 8px; }
+.shelf-label { display: block; font-weight: 300; font-size: 14px; margin-bottom: 4px; }
+.shelf-items { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill {
+  display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px 0 8px; cursor: pointer;
+  background: var(--beige); border: 2px solid var(--ink); border-radius: 999px; font: 400 15px/1 'Excon', sans-serif; color: var(--ink);
+}
+.pill:hover:not(:disabled) { background: var(--offwhite); }
+.pill:active:not(:disabled) { transform: translateY(1px); }
+.pill:disabled { opacity: 0.4; cursor: default; }
+.swatch { width: 16px; height: 16px; border: 2px solid var(--ink); border-radius: 50%; flex: none; }
+.chip { margin-left: 2px; padding: 2px 6px; background: var(--blue); border: 1.5px solid var(--ink); border-radius: 999px; font-size: 12px; font-weight: 700; }
+.m-hint { margin: 0; font-weight: 300; font-size: 16px; }
+.m-actions { margin-top: auto; display: flex; gap: 8px; align-items: center; }
+.btn-inline, .btn-primary {
+  height: 36px; padding: 0 14px; cursor: pointer; background: var(--beige); border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
+  font: 400 16px/1 'Excon', sans-serif; text-transform: lowercase; color: var(--ink);
+}
+.btn-primary { margin-left: auto; height: 40px; padding: 0 20px; background: var(--blue); font-size: 20px; text-transform: none; }
+.btn-inline:disabled, .btn-primary:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+.btn-inline:active:not(:disabled), .btn-primary:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.modal button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.m-pair { display: flex; gap: 16px; flex: none; }
+.m-pair figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.m-pair figcaption { font-weight: 300; font-size: 15px; }
+.stamp {
+  align-self: flex-start; padding: 6px 16px; border: 3px solid var(--ink); font-weight: 700; font-size: 30px; transform: rotate(-4deg);
+  box-shadow: 3px 3px 0 var(--ink); margin-top: 4px;
+}
+.stamp.win { background: var(--blue); }
+.stamp.miss { background: var(--beige); }
+.m-feedback { margin: 6px 0 0; font-weight: 400; font-size: 18px; line-height: 1.3; }
+.m-tip { margin: 0; font-weight: 300; font-size: 16px; line-height: 1.3; }
+.modal footer { display: flex; justify-content: space-between; align-items: center; height: 26px; font-weight: 300; font-size: 15px; }
+.reset { padding: 0; border: 0; background: none; cursor: pointer; font: 300 12px 'Excon', sans-serif; text-decoration: underline; color: var(--ink); }
+.oops { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 20px 28px; display: flex; flex-direction: column; gap: 14px; align-items: center;
+  background: var(--beige); border: 2px solid var(--ink); box-shadow: var(--shadow); font: 400 20px 'Excon', sans-serif; }
+.oops p { margin: 0; }

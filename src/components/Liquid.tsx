@@ -72,7 +72,7 @@ export function Liquid({ geom: g, bands, blended, crema, microfoam, clipId }: Pr
           const floater = b.ing === 'ice' || b.ing === 'ice-cream';
           const pad = 0.5; // avoid hairline gaps between layers
           return (
-            <g key={i} className="layer" style={{ '--i': i } as React.CSSProperties}>
+            <g key={`${i}-${b.ing}-${b.parts}`} className="layer" style={{ '--i': i } as React.CSSProperties}>
               {!floater && b.ing !== 'whipped-cream' ? <rect x={x - 2} y={b.y} width={w + 4} height={b.h + pad} fill={COLOR[b.ing]} /> : null}
               {b.ing === 'foam' ? <Dots x={x} y={b.y} w={w} h={b.h} /> : null}
               {b.ing === 'ice' ? <Cubes x={x} y={b.y} w={w} h={b.h} /> : null}
