@@ -8,7 +8,7 @@ import { PNG } from 'pngjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const W = 1280, H = 832, PORT = 4173;
 // Regions [x, y, w, h] excluded from the comparison (e.g. undesigned part of the cup strip).
-const MASKS = { landing: [], table: [[240, 370, 1040, 150], [880, 270, 400, 80], [0, 380, 110, 140], [56, 55, 270, 108], [500, 55, 280, 108], // wordmark and hint are centred on the screen, not at the Figma left
+const MASKS = { landing: [], table: [[240, 370, 1040, 150], [880, 270, 400, 80], [0, 380, 110, 140], [56, 55, 270, 108], [500, 55, 280, 108], [160, 0, 270, 210], // wordmark centred on the screen, hanging board not in reference/table.png
     [20, 384, 64, 64], [1196, 384, 64, 64]] }; // cups 2+ and the tags beyond 'with water' are not designed yet; hint text, arrow buttons and the wrapped last cup at the left edge are not in the design
 const SCREENS = [['landing', '/', 'reference/landing.png'], ['table', '/?screen=table&static=1', 'reference/table.png']];
 

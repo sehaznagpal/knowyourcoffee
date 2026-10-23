@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { table, frames } from '../art-loader';
+import { table, frames, board } from '../art-loader';
 import { CATEGORIES, DRINKS } from '../data/drinks';
 import { TAG_DEFAULT, TAG_POS, SLOT_PITCH } from '../data/layout';
 import { COUNT, Mover, easeInOutCubic, easeOutCubic, slotX, slotsFor } from '../logic/loop';
@@ -175,10 +175,13 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
     <div className={`table-screen${entering ? ' entering' : ''}${open ? ' has-card' : ''}`}>
       <div className="frames" dangerouslySetInnerHTML={{ __html: frames }} />
       <button type="button" className="wordmark" onClick={onHome}>know your coffee</button>
-      <p className="hint">
-        <span><span className="hint-hover">hover over any cup</span><span className="hint-tap">tap any cup</span></span>
-        <span>to see what's inside</span>
-      </p>
+      <div className="board" role="img" aria-label="hover over any cup to see what's inside">
+        {/* the board's strings continue up past the stage on tall windows; drawn as svg so they rasterise like the art */}
+        <svg className="board-strings" width="244" height="202" viewBox="0 0 244 202" aria-hidden="true">
+          <path d="M66.675 -3000H67.675V0H66.675ZM164.675 -3000H165.675V0H164.675Z" fill="#F7F5F1" />
+        </svg>
+        <div dangerouslySetInnerHTML={{ __html: board }} />
+      </div>
       <div className="table-art" dangerouslySetInnerHTML={{ __html: table }} />
       {viewW > STAGE.w + 1 ? (
         <>
