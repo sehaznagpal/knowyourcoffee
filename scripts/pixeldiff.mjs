@@ -8,7 +8,7 @@ import { PNG } from 'pngjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const W = 1280, H = 832, PORT = 4173;
 // Regions [x, y, w, h] excluded from the comparison (e.g. undesigned part of the cup strip).
-const MASKS = { landing: [], table: [[240, 370, 1040, 150], [880, 270, 400, 80]] }; // cups 2+ and the tags beyond 'with water' are not designed yet
+const MASKS = { landing: [], table: [[240, 370, 1040, 150], [880, 270, 400, 80], [0, 380, 110, 140], [20, 384, 64, 64], [1196, 384, 64, 64]] }; // cups 2+ and the tags beyond 'with water' are not designed yet; arrow buttons and the wrapped last cup at the left edge are not in the design
 const SCREENS = [['landing', '/', 'reference/landing.png'], ['table', '/?screen=table&static=1', 'reference/table.png']];
 
 const sh = (cmd, args) => new Promise((res, rej) => spawn(cmd, args, { cwd: root, stdio: 'inherit' }).on('exit', (c) => (c ? rej(new Error(cmd + ' failed')) : res())));
