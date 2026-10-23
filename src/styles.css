@@ -117,3 +117,42 @@ body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-s
   .entering .table-art, .entering .cup[data-pop] { animation: none; }
   .entering { animation: fade-in 200ms linear; }
 }
+
+/* hover / tap reveal */
+.cup { transition: translate 200ms ease-out; }
+.cup.active { translate: 0 -8px; z-index: 2; }
+.cup:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
+.cup .vessel, .cup .liquid, .cup .ribs { position: absolute; inset: 0; pointer-events: none; }
+.cup .vessel svg, .cup .ribs svg { display: block; width: 100%; height: 100%; }
+.cup .liquid { overflow: visible; }
+.layer { transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0); transition: transform 150ms ease-in; }
+.cup.active .layer {
+  transform: scaleY(1);
+  transition: transform 450ms cubic-bezier(0.34, 1.4, 0.64, 1) calc(var(--i) * 90ms);
+}
+.card { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.card-name {
+  position: absolute; transform: translateX(-50%); padding: 6px 14px; background: var(--blue); border: 2px solid var(--ink);
+  box-shadow: var(--shadow); font: 700 36px/normal 'Excon', sans-serif; text-transform: lowercase; white-space: nowrap;
+}
+.card-tip { position: absolute; margin: 0; text-align: center; color: var(--beige); font: 400 20px/1.25 'Excon', sans-serif; }
+.card-lines { position: absolute; left: 0; top: 0; }
+.card-layer {
+  position: absolute; height: 32px; padding: 0 10px; display: flex; align-items: center; white-space: nowrap;
+  background: var(--beige); border: 2px solid var(--ink); font: 400 16px/1 'Excon', sans-serif; text-transform: lowercase; color: var(--ink);
+}
+.legend-wrap { position: absolute; left: 330px; top: 735px; width: 180px; height: 34px; }
+.legend-wrap .legend { left: 0; top: 0; }
+.legend-pop {
+  position: absolute; left: 0; bottom: 46px; width: 250px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+  background: var(--beige); border: 2px solid var(--ink); box-shadow: var(--shadow); font: 400 18px/1 'Excon', sans-serif; z-index: 6;
+}
+.legend-pop p { margin: 4px 0 0; font-weight: 300; font-size: 16px; }
+.sw-row { display: flex; align-items: center; gap: 10px; }
+.sw-row.extras { gap: 8px; }
+.sw-row.extras .sw:first-of-type { margin-left: 6px; }
+.sw { position: relative; width: 22px; height: 22px; border: 2px solid var(--ink); display: inline-block; }
+.sw i { position: absolute; inset: 3px; background: radial-gradient(circle, #C9B07E 1px, transparent 1.4px) 0 0 / 5px 5px; }
+
+.tag { transition: opacity 150ms; }
+.has-card .tag { opacity: 0; }

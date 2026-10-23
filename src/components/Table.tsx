@@ -1,10 +1,11 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { table, frames } from '../art-loader';
 import { CATEGORIES, DRINKS } from '../data/drinks';
 import { TAG_DEFAULT, TAG_POS, SLOT_PITCH, slotCenter } from '../data/layout';
 import { Mover, easeInOutCubic, easeOutCubic, slotX } from '../logic/loop';
 import { ArrowButton } from './ArrowButton';
 import { Cup } from './Cup';
+import { DrinkCard } from './DrinkCard';
 import { Legend } from './Legend';
 
 type Props = { scale: number; entering: boolean; active: boolean; onHome: () => void; onTest: () => void };
@@ -20,6 +21,10 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
   const tagEls = useRef<(HTMLSpanElement | null)[]>([]);
   const zoneEl = useRef<HTMLDivElement>(null);
   const mover = useRef<Mover | null>(null);
+  // hovered / focused / tapped cup; `pinned` keeps it open until the next click elsewhere
+  const [open, setOpen] = useState<{ i: number; x: number; pinned: boolean } | null>(null);
+  const openRef = useRef(open);
+  openRef.current = open;
   const scaleRef = useRef(scale);
   const activeRef = useRef(active);
   scaleRef.current = scale;
@@ -40,7 +45,10 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
     return () => mover.current?.dispose();
   }, []);
 
+  const show = (i: number, pinned: boolean) => setOpen({ i, x: slotX(i, mover.current!.pos), pinned });
+
   const nudge = (n: number, dur: number) => {
+    setOpen(null);
     const m = mover.current!;
     m.animateTo(Math.round(m.target) + n, dur, easeInOutCubic);
   };
@@ -60,15 +68,22 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
     const onWheel = (e: WheelEvent) => {
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
       e.preventDefault();
+      setOpen(null);
       const m = mover.current!;
       m.set(m.pos + e.deltaX / scaleRef.current / SLOT_PITCH);
       clearTimeout(idle);
       idle = window.setTimeout(settle, 140);
     };
+    const away = (e: PointerEvent) => { if (!(e.target as Element).closest('.cup')) setOpen(null); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(null); };
+    document.addEventListener('pointerdown', away);
+    window.addEventListener('keydown', esc);
     window.addEventListener('keydown', onKey);
     const zone = zoneEl.current!;
     zone.addEventListener('wheel', onWheel, { passive: false });
     return () => {
+      document.removeEventListener('pointerdown', away);
+      window.removeEventListener('keydown', esc);
       window.removeEventListener('keydown', onKey);
       zone.removeEventListener('wheel', onWheel);
       clearTimeout(idle);
@@ -90,6 +105,7 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
     if (!d.moved) {
       if (Math.abs(dx) < DRAG_THRESHOLD) return;
       d.moved = true;
+      setOpen(null);
       mover.current!.cancel();
       zoneEl.current!.setPointerCapture(e.pointerId);
     }
@@ -115,7 +131,7 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
   };
 
   return (
-    <div className={`table-screen${entering ? ' entering' : ''}`}>
+    <div className={`table-screen${entering ? ' entering' : ''}${open ? ' has-card' : ''}`}>
       <div className="frames" dangerouslySetInnerHTML={{ __html: frames }} />
       <button type="button" className="wordmark" onClick={onHome}>know your coffee</button>
       <div className="table-art" dangerouslySetInnerHTML={{ __html: table }} />
@@ -131,7 +147,19 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
       >
         <div className="cups" style={{ left: ZONE_PAD, top: -ZONE.top }}>
           {DRINKS.map((d, i) => (
-            <Cup key={d.id} drink={d} x={slotX(i, 0)} popDelay={i <= 6 ? i * 30 : undefined} refCb={(el) => { cupEls.current[i] = el; }} />
+            <Cup
+              key={d.id}
+              drink={d}
+              x={slotX(i, 0)}
+              popDelay={i <= 6 ? i * 30 : undefined}
+              active={open?.i === i}
+              refCb={(el) => { cupEls.current[i] = el; }}
+              onEnter={() => { if (!openRef.current?.pinned) show(i, false); }}
+              onLeave={() => { if (!openRef.current?.pinned) setOpen(null); }}
+              onTap={(type) => { if (type === 'touch' && openRef.current?.i === i && openRef.current.pinned) setOpen(null); else show(i, true); }}
+              onFocus={() => { if (!openRef.current?.pinned) show(i, false); }}
+              onBlur={() => { if (!openRef.current?.pinned) setOpen(null); }}
+            />
           ))}
           {CATEGORIES.map((c, k) => {
             const pos = TAG_POS[c] ?? TAG_DEFAULT;
@@ -143,6 +171,7 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
           })}
         </div>
       </div>
+      {open ? <DrinkCard drink={DRINKS[open.i]} x={open.x} /> : null}
       <ArrowButton dir="left" onClick={() => nudge(-3, 600)} />
       <ArrowButton dir="right" onClick={() => nudge(3, 600)} />
       <Legend />
