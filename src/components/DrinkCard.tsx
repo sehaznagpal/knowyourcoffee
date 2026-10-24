@@ -9,6 +9,8 @@ type Props = { drink: Drink; x: number };
 const LIFT = 8;
 const TAG_H = 32;
 const GAP = 34;
+const TIP_INK_TOP = 4; // measured: the tip's first line starts 4px below its box top
+const PILL_GAP = 4; // clear space between the name pill and the tip's glyph tops (pill is anchored by its bottom edge)
 
 /** Name tag, leader lines to a tag per layer, and the tip. Positioned in stage px above the active cup. */
 export function DrinkCard({ drink, x }: Props) {
@@ -38,7 +40,7 @@ export function DrinkCard({ drink, x }: Props) {
 
   return (
     <div className="card" aria-hidden="true">
-      <span className="card-name" style={{ left: nameX, top: nameY }}>{drink.name}</span>
+      <span className="card-name" style={{ left: nameX, top: nameY + 62 + TIP_INK_TOP - PILL_GAP }}>{drink.name}</span>
       <p className="card-tip" style={{ left: tipLeft, top: nameY + 62, width: tipW }}>{drink.tip}</p>
       <svg className="card-lines" width="1280" height="832" viewBox="0 0 1280 832">
         {placed.map((p, i) => {

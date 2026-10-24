@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { table, frames, board } from '../art-loader';
 import { CATEGORIES, DRINKS } from '../data/drinks';
-import { TAG_DEFAULT, TAG_POS, SLOT_PITCH } from '../data/layout';
-import { COUNT, Mover, easeInOutCubic, easeOutCubic, slotX, slotsFor } from '../logic/loop';
+import { PITCH, TAG_TOP } from '../data/layout';
+import { COUNT, Mover, cupX, easeInOutCubic, easeOutCubic, nearestStop, stopOffset, stripFor, tagX } from '../logic/loop';
 import { ArrowButton } from './ArrowButton';
 import { Cup } from './Cup';
 import { DrinkCard } from './DrinkCard';
@@ -17,7 +17,6 @@ const LINGER_MS = 120; // others stay dimmed this long after the pointer leaves 
 const STAGE = { w: 1280, h: 832 };
 const ARROW_INSET = 24; // arrows sit 24px inside the screen edges
 
-const firstOfGroup = CATEGORIES.map((c) => DRINKS.findIndex((d) => d.category === c));
 
 export function Table({ scale, entering, active, onHome, onTest }: Props) {
   const cupEls = useRef<(HTMLDivElement | null)[]>([]);
@@ -39,9 +38,9 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
   // viewport in stage px: the strip is clipped by the screen, not by the stage
   const viewW = vw / scale;
   const viewLeft = (STAGE.w - viewW) / 2;
-  const slots = useMemo(() => slotsFor(viewLeft, viewW), [viewLeft, viewW]);
-  const slotsRef = useRef(slots);
-  slotsRef.current = slots;
+  const strip = useMemo(() => stripFor(viewLeft, viewW), [viewLeft, viewW]);
+  const stripRef = useRef(strip);
+  stripRef.current = strip;
   const scaleRef = useRef(scale);
   const activeRef = useRef(active);
   scaleRef.current = scale;
@@ -49,16 +48,14 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
 
   useLayoutEffect(() => {
     const apply = (pos: number) => {
-      const sl = slotsRef.current;
-      for (let i = 0; i < sl.count; i++) {
+      const st = stripRef.current;
+      for (let i = 0; i < st.copies * COUNT; i++) {
         const el = cupEls.current[i];
-        if (el) el.style.transform = `translateX(${slotX(i, pos, sl)}px)`;
+        if (el) el.style.transform = `translateX(${cupX(i, pos, st)}px)`;
       }
-      for (let r = 0; r < sl.count / COUNT; r++) {
-        CATEGORIES.forEach((c, k) => {
-          const el = tagEls.current[r * CATEGORIES.length + k];
-          if (el) el.style.transform = `translateX(${slotX(r * COUNT + firstOfGroup[k], pos, sl) + (TAG_POS[c] ?? TAG_DEFAULT).dx}px)`;
-        });
+      for (let t = 0; t < st.copies * CATEGORIES.length; t++) {
+        const el = tagEls.current[t];
+        if (el) el.style.transform = `translateX(${tagX(t, pos, st)}px)`;
       }
     };
     mover.current = new Mover(apply);
@@ -66,12 +63,12 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
   }, []);
 
   // the cup list changes with the viewport size: put every cup back where the loop says it is
-  useLayoutEffect(() => { mover.current?.refresh(); }, [slots]);
+  useLayoutEffect(() => { mover.current?.refresh(); }, [strip]);
 
   const show = (i: number, pinned: boolean) => {
     clearTimeout(lingerTimer.current);
     setLingering(false);
-    setOpen({ i, x: slotX(i, mover.current!.pos, slotsRef.current), pinned });
+    setOpen({ i, x: cupX(i, mover.current!.pos, stripRef.current), pinned });
   };
   // pointer left the cup: the card closes now, the other cups stay dimmed for LINGER_MS
   const release = () => {
@@ -90,11 +87,11 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
   const nudge = (n: number, dur: number) => {
     closeNow();
     const m = mover.current!;
-    m.animateTo(Math.round(m.target) + n, dur, easeInOutCubic);
+    m.animateTo(stopOffset(nearestStop(m.target) + n), dur, easeInOutCubic); // n cups along, gaps included
   };
   const settle = () => {
     const m = mover.current!;
-    m.animateTo(Math.round(m.pos), 300, easeOutCubic);
+    m.animateTo(stopOffset(nearestStop(m.pos)), 300, easeOutCubic);
   };
 
   // keyboard, plus wheel (non-passive so the browser's horizontal swipe-back is suppressed inside the zone)
@@ -110,7 +107,7 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
       e.preventDefault();
       closeNow();
       const m = mover.current!;
-      m.set(m.pos + e.deltaX / scaleRef.current / SLOT_PITCH);
+      m.set(m.pos + e.deltaX / scaleRef.current);
       clearTimeout(idle);
       idle = window.setTimeout(settle, 140);
     };
@@ -152,7 +149,7 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
     }
     d.samples.push({ t: e.timeStamp, x: e.clientX });
     if (d.samples.length > 8) d.samples.shift();
-    mover.current!.set(d.pos0 - dx / scaleRef.current / SLOT_PITCH);
+    mover.current!.set(d.pos0 - dx / scaleRef.current);
   };
   const endDrag = (e: React.PointerEvent) => {
     const d = drag.current;
@@ -164,10 +161,10 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
     const recent = d.samples.filter((s) => e.timeStamp - s.t < 120);
     const first = recent[0] ?? d.samples[0];
     const dt = Math.max(1, e.timeStamp - first.t);
-    const v = -(e.clientX - first.x) / dt / scaleRef.current / SLOT_PITCH; // slots per ms
+    const v = -(e.clientX - first.x) / dt / scaleRef.current; // px per ms
     const m = mover.current!;
-    const target = Math.round(m.pos + v * 280);
-    const dur = Math.min(1100, 350 + Math.abs(target - m.pos) * 140);
+    const target = stopOffset(nearestStop(m.pos + v * 280)); // settle on the nearest cup centre
+    const dur = Math.min(1100, 350 + (Math.abs(target - m.pos) / PITCH) * 140);
     m.animateTo(target, dur, easeOutCubic);
   };
 
@@ -201,16 +198,16 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
         onClickCapture={(e) => { if (suppressClick.current) e.stopPropagation(); }}
       >
         <div className="cups" data-active={open || lingering ? '' : undefined} style={{ left: ZONE_PAD, top: -ZONE.top }}>
-          {Array.from({ length: slots.count }, (_, i) => {
+          {Array.from({ length: strip.copies * COUNT }, (_, i) => {
             const d = DRINKS[i % COUNT];
-            const x = slotX(i, 0, slots);
-            const slot = (x - viewLeft) / SLOT_PITCH; // 0 at the left screen edge
+            const x = cupX(i, 0, strip);
+            const slot = (x - viewLeft) / PITCH; // 0 at the left screen edge
             return (
             <Cup
               key={`${d.id}-${Math.floor(i / COUNT)}`}
               drink={d}
               x={x}
-              popDelay={slot > -1 && slot < viewW / SLOT_PITCH + 1 ? Math.max(0, slot) * 30 : undefined}
+              popDelay={slot > -1 && slot < viewW / PITCH + 1 ? Math.max(0, slot) * 30 : undefined}
               active={open?.i === i}
               refCb={(el) => { cupEls.current[i] = el; }}
               onEnter={() => { if (!openRef.current?.pinned) show(i, false); }}
@@ -221,14 +218,11 @@ export function Table({ scale, entering, active, onHome, onTest }: Props) {
             />
             );
           })}
-          {Array.from({ length: slots.count / COUNT }, (_, r) => CATEGORIES.map((c, k) => {
-            const pos = TAG_POS[c] ?? TAG_DEFAULT;
-            return (
-              <span key={`${c}-${r}`} className="tag" ref={(el) => { tagEls.current[r * CATEGORIES.length + k] = el; }} style={{ left: 0, top: pos.y, transform: `translateX(${slotX(r * COUNT + firstOfGroup[k], 0, slots) + pos.dx}px)` }}>
-                {c}
-              </span>
-            );
-          }))}
+          {Array.from({ length: strip.copies * CATEGORIES.length }, (_, t) => (
+            <span key={`${CATEGORIES[t % CATEGORIES.length]}-${Math.floor(t / CATEGORIES.length)}`} className="tag" ref={(el) => { tagEls.current[t] = el; }} style={{ left: 0, top: TAG_TOP, transform: `translateX(${tagX(t, 0, strip)}px)` }}>
+              {CATEGORIES[t % CATEGORIES.length]}
+            </span>
+          ))}
         </div>
       </div>
       {open ? <DrinkCard drink={DRINKS[open.i % COUNT]} x={open.x} /> : null}

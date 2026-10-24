@@ -1,24 +1,50 @@
-import { FIRST_CENTER, SLOT_PITCH } from '../data/layout';
+import { COUNT, LEN, cupBase, tagBase } from '../data/layout';
+import { CATEGORIES } from '../data/drinks';
 
-export const COUNT = 18; // drinks in the sequence
+export { COUNT };
+const TAGS = CATEGORIES.length;
 
-/** Slots the strip spans: [lo, lo + count). A cup wraps while it is off-screen, so the strip covers the viewport plus 2 cups each side. */
-export type Slots = { lo: number; count: number };
+/**
+ * Scroll position is in px: cup i stands at cupBase[i] - pos. The strip is `copies` loops long, wrapped over
+ * [lo, lo + copies * LEN), so cups, gaps and tags repeat together on wide screens.
+ */
+export type Strip = { lo: number; copies: number };
 
-/** `viewW` / `viewLeft`: visible width and left edge in stage px. `count` is a multiple of COUNT so the drink sequence repeats cleanly. */
-export function slotsFor(viewLeft: number, viewW: number): Slots {
-  const lo = Math.floor((viewLeft - FIRST_CENTER) / SLOT_PITCH) - 2;
-  const need = Math.ceil(viewW / SLOT_PITCH) + 5;
-  return { lo, count: COUNT * Math.ceil(need / COUNT) };
+/** `viewLeft` / `viewW`: visible left edge and width in stage px. Covers the screen plus about 2 cups each side. */
+export function stripFor(viewLeft: number, viewW: number): Strip {
+  const margin = 560;
+  return { lo: viewLeft - margin, copies: Math.max(1, Math.ceil((viewW + 2 * margin) / LEN)) };
 }
 
-export const wrap = (s: number, { lo, count }: Slots) => ((((s - lo) % count) + count) % count) + lo;
-export const slotX = (index: number, pos: number, slots: Slots) => FIRST_CENTER + wrap(index - pos, slots) * SLOT_PITCH;
+const wrapX = (v: number, { lo, copies }: Strip) => {
+  const m = copies * LEN;
+  return ((((v - lo) % m) + m) % m) + lo;
+};
+
+/** `index` runs over every rendered cup: loop copy * COUNT + drink. Returns the cup centre in stage px. */
+export const cupX = (index: number, pos: number, strip: Strip) =>
+  wrapX(cupBase[index % COUNT] + Math.floor(index / COUNT) * LEN - pos, strip);
+/** Left edge of tag `index` (loop copy * 5 + category). */
+export const tagX = (index: number, pos: number, strip: Strip) =>
+  wrapX(tagBase[index % TAGS] + Math.floor(index / TAGS) * LEN - pos, strip);
+
+/** Scroll offset at which cup number `m` (any integer, counted along the endless loop) is at rest. */
+export const stopOffset = (m: number) => cupBase[((m % COUNT) + COUNT) % COUNT] - cupBase[0] + Math.floor(m / COUNT) * LEN;
+/** Number of the cup whose rest offset is nearest to `pos`. */
+export function nearestStop(pos: number): number {
+  const base = Math.floor(pos / LEN) * COUNT;
+  let best = base, bd = Infinity;
+  for (let m = base - 1; m <= base + COUNT; m++) {
+    const d = Math.abs(stopOffset(m) - pos);
+    if (d < bd) { bd = d; best = m; }
+  }
+  return best;
+}
 
 export const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 export const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-/** Animates a scalar position (in slots) and reports every change. */
+/** Animates a scalar scroll position and reports every change. */
 export class Mover {
   pos = 0;
   target = 0;

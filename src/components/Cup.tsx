@@ -3,7 +3,7 @@ import { vessels } from '../art-loader';
 import { geom } from '../art-loader/geometry';
 import type { Drink } from '../data/drinks';
 import { LABEL } from '../data/colors';
-import { VESSEL_SIZE } from '../data/layout';
+import { LABEL_TOP, VESSEL_SIZE } from '../data/layout';
 import { bands } from '../logic/layers';
 import { Liquid } from './Liquid';
 
@@ -26,6 +26,9 @@ export const recipeText = (d: Drink) => d.layers.map((l) => `${LABEL[l.ing]} x${
 export function Cup({ drink, x, popDelay, active, refCb, onEnter, onLeave, onTap, onFocus, onBlur }: Props) {
   const v = VESSEL_SIZE[drink.vessel];
   const g = geom(drink.vessel);
+  // label centre: the liquid mask's bounding box (the cup body), so a handle does not pull it sideways
+  const labelX = g.bbox.x + g.bbox.w / 2;
+  const reach = LABEL_TOP + 16 - v.top; // the hit area runs down to the bottom of the label
   const total = drink.layers.reduce((a, l) => a + l.parts, 0);
   const b = useMemo(() => bands(drink.layers, total, g), [drink, total, g]);
   const lastType = { current: 'mouse' };
@@ -37,7 +40,7 @@ export function Cup({ drink, x, popDelay, active, refCb, onEnter, onLeave, onTap
       tabIndex={0}
       aria-label={`${drink.name}: ${recipeText(drink)}`}
       aria-pressed={active}
-      style={{ left: -v.w / 2, top: v.top, width: v.w, height: v.h, transform: `translateX(${x}px)`, '--pop-delay': `${popDelay ?? 0}ms` } as React.CSSProperties}
+      style={{ left: -v.w / 2, top: v.top, width: v.w, height: reach, transform: `translateX(${x}px)`, '--pop-delay': `${popDelay ?? 0}ms`, '--vh': `${v.h}px`, transformOrigin: `50% ${v.h}px` } as React.CSSProperties}
       data-pop={popDelay !== undefined ? '' : undefined}
       onPointerDown={(e) => { lastType.current = e.pointerType; }}
       onPointerEnter={(e) => { if (e.pointerType === 'mouse') onEnter(); }}
@@ -49,6 +52,7 @@ export function Cup({ drink, x, popDelay, active, refCb, onEnter, onLeave, onTap
     >
       <div className="vessel" dangerouslySetInnerHTML={{ __html: vessels[drink.vessel] }} />
       <Liquid geom={g} bands={b} blended={drink.blended} crema={drink.crema} microfoam={drink.microfoam} clipId={`clip-${drink.id}`} />
+      <span className="cup-label" aria-hidden="true" style={{ left: labelX, top: LABEL_TOP - v.top }}>{drink.name.toLowerCase()}</span>
       {drink.vessel === '01' ? <div className="ribs" dangerouslySetInnerHTML={{ __html: ribs() }} /> : null}
     </div>
   );
