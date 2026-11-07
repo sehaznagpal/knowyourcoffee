@@ -26,10 +26,10 @@ const ROW2: Ingredient[] = SHELF[2].items; // dairy
 // Hanging boards over the jars: each is centred over its own jars, at the height the plain words used to sit
 const jarX = (i: number) => SHELF_X + i * PITCH + 50; // centre of jar i
 const SIGNS = [
-  { text: 'coffee', x: (jarX(0) + jarX(1)) / 2, y: 16 }, // espresso, drip coffee
-  { text: 'water', x: jarX(3), y: 16 }, // hot water, cold water, ice
-  { text: 'sweet', x: jarX(5), y: 16 }, // chocolate syrup
-  { text: 'dairy', x: SHELF_X - 30, y: ROW_TOP[1] + 62, left: true }, // left of the second row, centred on it
+  { text: 'coffee', x: (jarX(0) + jarX(1)) / 2, y: 16, i: 0.5 }, // espresso, drip coffee
+  { text: 'water', x: jarX(3), y: 16, i: 3 }, // hot water, cold water, ice
+  { text: 'sweet', x: jarX(5), y: 16, i: 5 }, // chocolate syrup
+  { text: 'dairy', x: SHELF_X - 30, y: ROW_TOP[1] + 62, left: true, i: 0 }, // left of the second row, centred on it
 ];
 
 function JarArt({ ing }: { ing: Ingredient }) {
@@ -143,8 +143,8 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
     <button
       key={ing}
       type="button"
-      className="jar"
-      style={{ left: SHELF_X + i * PITCH - 6, top: ROW_TOP[row] }}
+      className={`jar r${row}`}
+      style={{ left: SHELF_X + i * PITCH - 6, top: ROW_TOP[row], '--i': i } as React.CSSProperties}
       disabled={dis || full}
       aria-label={`Pour ${LABEL[ing]}${(counts.get(ing) ?? 0) ? `, ${counts.get(ing)} so far` : ''}`}
       onClick={() => add(ing)}
@@ -213,15 +213,15 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
     <div className="g-room">
       {/* wall shelf */}
       {ROW_TOP.map((t, r) => (
-        <div key={r} className="shelf-board" style={{ left: SHELF_X - 16, top: t + 74, width: (r === 0 ? ROW1.length : ROW2.length) * PITCH + 4 }} />
+        <div key={r} className={`shelf-board r${r}`} style={{ left: SHELF_X - 16, top: t + 74, width: (r === 0 ? ROW1.length : ROW2.length) * PITCH + 4 }} />
       ))}
       {SIGNS.map((c) => (
-        <span key={c.text} className={`shelf-sign${c.left ? ' is-left' : ''}`} style={{ left: c.x, top: c.y }}>{c.text}</span>
+        <span key={c.text} className={`shelf-sign${c.left ? ' is-left' : ' is-top'}`} style={{ left: c.x, top: c.y, '--i': c.i } as React.CSSProperties}>{c.text}</span>
       ))}
       {ROW1.map((ing, i) => jar(ing, i, 0))}
       {ROW2.map((ing, i) => jar(ing, i, 1))}
 
-      {!compact ? bubbleEl : null}
+      {bubbleEl}
 
       {/* the counter, with the glass on it */}
       <div className="counter-art" style={{ top: COUNTER_TOP }} aria-hidden="true">
@@ -237,7 +237,7 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
       </div>
 
       {!compact ? <>{tabsEl}{buttonsEl}{statsEl}{resultEl}</> : null}
-      {compact ? createPortal(<div className="ph-room">{bubbleEl}{resultEl}<div className="ph-room-bar">{tabsEl}<div className="ph-room-row">{buttonsEl}</div><div className="ph-room-foot">{statsEl}</div></div></div>, document.body) : null}
+      {compact ? createPortal(<div className="ph-room">{resultEl}<div className="ph-room-bar">{tabsEl}<div className="ph-room-row">{buttonsEl}</div><div className="ph-room-foot">{statsEl}</div></div></div>, document.body) : null}
 
       {fly ? (
         <div ref={flyEl} className="fly-card" style={{ width: CARD_W, height: CARD_H }} aria-hidden="true">

@@ -286,7 +286,6 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
 .is-compact .cc-next { order: 2; }
 .is-compact .cc-bar { order: 3; flex-direction: column; align-items: stretch; width: calc(150px / var(--fit)); }
 .is-compact .cc-bar button { height: calc(46px / var(--fit)); font-size: calc(15px / var(--fit)); }
-.bag-fit.is-compact .bag-filter, .bag-fit.is-compact .btn-inline, .bag-fit.is-compact .bag-reset { min-height: calc(44px / var(--fit)); }
 .bag-fit.is-compact .arrow-btn.bag-x { width: calc(48px / var(--fit)); height: calc(48px / var(--fit)); }
 .ph-room { position: fixed; inset: 0; z-index: 100; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 .ph-room > * { pointer-events: auto; }
@@ -343,3 +342,80 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
 .arrow-btn.g-help { top: 680px; font: 700 26px 'Excon', sans-serif; color: var(--ink); background: #FFFEFA; }
 .arrow-btn.g-sound { top: 14px; width: 48px; height: 48px; background: #FFFEFA; z-index: 15; }
 .ph-help { font: 700 22px 'Excon', sans-serif; color: var(--ink); background: #FFFEFA; }
+
+/* ---- testing room on a phone held sideways ----
+   Everything is sized in real screen pixels: --s is the stage scale, so Npx / var(--s) is N screen pixels inside the stage.
+   Bottom-anchored parts hang from the bottom of the screen (stage y 832); the shelf hangs from the top. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .gallery.compact {
+    --k: calc(var(--s) / 0.46875); /* 1 at a 390 px tall screen */
+    --P: clamp(68px, calc((100vw - 330px) / 5.6), 100px); /* jar pitch: 100 on a wide phone, tighter on a narrow one so the shelf stays between the corner buttons */
+    --L1: 17px; /* height of a row-1 label: one line (two on a narrow screen) */
+    --A: max(34px, min(calc(43px * var(--k)), calc((832px * var(--s) - 280px - var(--L1) - var(--L1)) / 2))); /* jar art height, real px: 15% bigger than before, as tall as the room allows */
+    --slab: 79px; /* counter edge (9) plus button band (58) plus 12 of padding, from the bottom of the screen */
+  }
+  /* counter: a slab at the bottom of the screen */
+  .gallery.compact .counter-art { top: calc(832px - var(--slab) / var(--s)) !important; height: calc(67px / var(--s)); background: linear-gradient(#1e1e1e 0 0) bottom / 100% calc(58px / var(--s)) no-repeat, #f7f5f1; border-top: calc(2px / var(--s)) solid #1e1e1e; border-bottom: calc(2px / var(--s)) solid #1e1e1e; }
+  .gallery.compact .counter-art svg { display: none; }
+  .gallery.compact .room-glass { top: calc(832px - var(--slab) / var(--s) - 306px + 2px / var(--s)) !important; }
+
+  /* shelf: 6 jars on a 104 px pitch, centred */
+  .gallery.compact .jar { width: calc(60px / var(--s)); height: auto; gap: 0; left: calc(640px + (var(--i) * var(--P) - 2.5 * var(--P) - 30px) / var(--s)) !important; }
+  .gallery.compact .jar.r0 { top: calc(32px / var(--s)) !important; }
+  .gallery.compact .jar.r1 { top: calc((40px + var(--A) + var(--L1)) / var(--s)) !important; }
+  .gallery.compact .jar > svg { width: auto; height: calc(var(--A) / var(--s)); }
+  .gallery.compact .jar-label { font-size: calc(11px / var(--s)); line-height: 1.2; max-width: none; white-space: nowrap; padding: calc(1px / var(--s)) calc(5px / var(--s)); border-width: calc(1px / var(--s)); margin-top: calc(-1px / var(--s)); }
+  .gallery.compact .jar.r1 .jar-label { width: max-content; white-space: normal; max-width: calc(min(92px, var(--P) - 4px) / var(--s)); text-align: center; }
+  .gallery.compact .jar.r0 .jar-label { max-width: none; white-space: nowrap; }
+  .gallery.compact .jar.r1[style*="--i: 3"] .jar-label { white-space: nowrap; max-width: none; }
+  .gallery.compact .jar.r1[style*="--i: 2"] .jar-label { max-width: calc((var(--P) + 22px) / var(--s)); padding-inline: calc(3px / var(--s)); }
+  .gallery.compact .shelf-board { left: calc(640px - (2.5 * var(--P) + 38px) / var(--s)) !important; width: calc((5 * var(--P) + 76px) / var(--s)) !important; height: calc(8px / var(--s)); }
+  .gallery.compact .shelf-board.r0 { top: calc((32px + var(--A) - 3px) / var(--s)) !important; }
+  .gallery.compact .shelf-board.r1 { top: calc((40px + 2 * var(--A) + var(--L1) - 3px) / var(--s)) !important; }
+  .gallery.compact .shelf-sign { font-size: calc(11.5px / var(--s)); padding: calc(2px / var(--s)) calc(8px / var(--s)); border-width: calc(1.5px / var(--s)); box-shadow: calc(2px / var(--s)) calc(2px / var(--s)) 0 #1e1e1e; }
+  .gallery.compact .shelf-sign::before, .gallery.compact .shelf-sign::after { top: calc(-9px / var(--s)); height: calc(8px / var(--s)); }
+  .gallery.compact .shelf-sign.is-top { left: calc(640px + (var(--i) * var(--P) - 2.5 * var(--P)) / var(--s)) !important; top: calc(11px / var(--s)) !important; }
+  .gallery.compact .shelf-sign.is-left { left: calc(640px - (2.5 * var(--P) + 42px) / var(--s)) !important; top: calc((40px + var(--A) + var(--L1) + (var(--A) + 17px) / 2) / var(--s)) !important; }
+
+  /* the speech bubble: just above and beside her head, its pointer aimed at her */
+  .gallery.compact .room-bubble { left: auto; right: calc(1280px - 141px); top: calc(172px / var(--s)); width: max-content; max-width: calc(135px / var(--s)); padding: calc(5px / var(--s)) calc(9px / var(--s)) calc(6px / var(--s)); border-width: calc(2px / var(--s)); border-radius: calc(12px / var(--s)); box-shadow: calc(2px / var(--s)) calc(2px / var(--s)) 0 #1e1e1e; }
+  .gallery.compact .room-bubble span { font-size: calc(11.5px / var(--s)); }
+  .gallery.compact .room-bubble b { font-size: calc(19px / var(--s)); }
+  .gallery.compact .room-bubble small { font-size: calc(11px / var(--s)); margin-top: calc(2px / var(--s)); }
+  .gallery.compact .room-bubble::after { display: block; left: auto; bottom: auto; right: calc(-6px / var(--s)); top: 55%; width: calc(10px / var(--s)); height: calc(10px / var(--s)); border-width: calc(2px / var(--s)); rotate: -45deg; translate: none; margin-top: calc(-5px / var(--s)); }
+
+  /* controls */
+  .ph-back { height: 40px; padding: 0 9px; font-size: 11px; }
+  .ph-room .room-tabs { gap: 12px; }
+  .ph-room .room-tab { position: relative; height: 28px; padding: 0 10px; font-size: 11px; }
+  .ph-room .room-tab::after { content: ''; position: absolute; inset: -6px -4px; }
+  .ph-room-bar { left: 0; right: 0; margin: 0 auto; width: max-content; padding: 0; align-items: flex-end; bottom: calc(max(env(safe-area-inset-bottom), 12px) + 5px); gap: 0; }
+  .ph-room .counter-buttons { gap: 10px; }
+  .ph-room .counter-buttons button { height: 40px; padding: 0 12px; font-size: 13px; }
+  .ph-room .counter-buttons .btn-primary { height: 40px; font-size: 15px; margin-left: 0; padding: 0 14px; }
+  .ph-room .room-stats { font-size: 11px; line-height: 1.2; color: var(--beige); margin: 0; }
+  .ph-room-foot { gap: 0; }
+}
+
+/* ---- phone landscape: nothing under 11 real px, whatever the stage scale ---- */
+@media (orientation: landscape) and (max-height: 500px) {
+  .gallery.compact .g-door-sign, .gallery.compact .g-welcome p { font-size: max(24px, calc(11.5px / var(--s))); }
+  .gallery.compact .g-welcome p { max-width: 560px; }
+  .gallery.compact .g-tour-sign { width: max-content; max-width: 330px; }
+  .gallery.compact .g-tour-sign b { font-size: max(22px, calc(12px / var(--s))); }
+  .gallery.compact .g-tour-sign span { font-size: max(14px, calc(11.5px / var(--s))); }
+  .gallery.compact .placard span { font-size: max(12px, calc(7.7px / var(--s))); }
+  .gallery.compact .look-hint, .g-hint { font-size: max(18px, calc(11.5px / var(--s))); }
+  .gallery.compact .g-char .look-hint { font-size: max(18px, calc(11.5px / var(--s))); }
+  .landing-caption { font-size: max(24px, calc(11.5px / var(--s))); width: auto; left: 0; right: 0; text-align: center; }
+  /* the bag on a phone: every tap target is at least 40 real px, so the dialog is a little taller and the control rows grow with it */
+  .bag-fit.is-compact { height: calc(539px + 40px / var(--fit) - 24px); }
+  .bag-fit.is-compact .bag-filter { font-size: calc(12px / var(--fit)); height: calc(40px / var(--fit)); padding: 0 calc(14px / var(--fit)); }
+  .bag-fit.is-compact .bag-bar, .bag-fit.is-compact .bag-rbar { height: calc(40px / var(--fit)); }
+  .bag-fit.is-compact .cc-bar.bag-bar { flex-direction: row; align-items: center; order: 0; width: max-content; gap: calc(8px / var(--fit)); justify-content: flex-start; }
+  .bag-fit.is-compact .cc-bar.bag-bar button, .bag-fit.is-compact .bag-bar .btn-inline, .bag-fit.is-compact .bag-reset { height: calc(40px / var(--fit)); min-height: 0; font-size: calc(11.5px / var(--fit)); padding: 0 calc(10px / var(--fit)); }
+  .bag-fit.is-compact .arrow-btn.bag-step { width: calc(40px / var(--fit)); height: calc(40px / var(--fit)); }
+  .bag-fit.is-compact .arrow-btn.bag-step svg { width: calc(14px / var(--fit)); height: calc(14px / var(--fit)); }
+  .bag-fit.is-compact .bag-down b { font-size: calc(14px / var(--fit)); }
+}
+}

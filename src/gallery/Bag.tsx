@@ -35,7 +35,7 @@ export function BagPanel({ state, onShow, onClose, onReset, compact }: { state: 
   const [sel, setSel] = useState(() => (wall.find((d) => inBag(state, d.id)) ?? wall[0]).id);
   const [flipped, setFlipped] = useState(false);
   const box = useRef<HTMLDivElement>(null);
-  const calc = () => Math.min(1, (window.innerWidth * 0.96) / 851, (window.innerHeight * 0.94) / 539);
+  const calc = () => Math.min(1, (window.innerWidth * 0.96) / 851, (window.innerHeight * 0.94) / (compact ? 560 : 539));
   const [fit, setFit] = useState(calc);
   useEffect(() => {
     const on = () => setFit(calc());
