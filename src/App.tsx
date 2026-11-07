@@ -6,6 +6,7 @@ import { FLOOR_Y } from './gallery/layout';
 import './gallery/gallery.css';
 import { TestModal } from './components/TestModal';
 import { installClickSound } from './audio/sound';
+import { RotateGate, usePortrait } from './components/RotateGate';
 
 const FRAME = { w: 1280, h: 832 };
 const DOOR_CENTER = { x: 700, y: 480 };
@@ -38,6 +39,13 @@ export default function App() {
   const [fadeIn, setFadeIn] = useState(false);
   const [isTestOpen, setIsTestOpen] = useState(params.get('test') === '1' && world === 'table'); // in the gallery, ?test=1 starts inside the testing room
   const scale = useStageScale();
+  const portrait = usePortrait();
+  // while upright, nothing underneath can be reached or focused (and nothing resets)
+  useEffect(() => {
+    // everything but the gate (the stage, and cards, bag and walkthrough rendered into the body)
+    const kids = [...document.body.children].filter((e) => !e.classList.contains('rg') && e.tagName !== 'SCRIPT');
+    kids.forEach((e) => (portrait ? e.setAttribute('inert', '') : e.removeAttribute('inert')));
+  }, [portrait]);
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   useEffect(() => installClickSound(), []);
@@ -86,9 +94,9 @@ export default function App() {
       >
         {onTable ? (
           world === 'gallery' ? (
-            <Gallery scale={scale} entering={entering} active={phase === 'table' && !isTestOpen} onHome={goHome} onTest={() => setIsTestOpen(true)} />
+            <Gallery scale={scale} entering={entering} active={phase === 'table' && !isTestOpen && !portrait} onHome={goHome} onTest={() => setIsTestOpen(true)} />
           ) : (
-            <Table scale={scale} entering={entering} active={phase === 'table' && !isTestOpen} onHome={goHome} onTest={() => setIsTestOpen(true)} />
+            <Table scale={scale} entering={entering} active={phase === 'table' && !isTestOpen && !portrait} onHome={goHome} onTest={() => setIsTestOpen(true)} />
           )
         ) : (
           <Landing onStart={start} zooming={phase === 'zoom'} />
@@ -101,7 +109,7 @@ export default function App() {
         />
       ) : null}
       {isTestOpen ? <TestModal onClose={() => setIsTestOpen(false)} /> : null}
-      <div className="rotate-note">rotate your phone</div>
+      <RotateGate portrait={portrait} />
     </div>
   );
 }

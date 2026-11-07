@@ -12,6 +12,15 @@ const FEET = 700; // the pavement
 const HOME_X = 574; // between the A-frame sign and the door
 const DOOR_X = 700; // the middle of the door
 const WALK_MS = 800;
+// Where the browser allows it, go fullscreen and lock to landscape; anywhere else (iOS) this quietly does nothing.
+async function goLandscape() {
+  try {
+    const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+    if (!o?.lock) return;
+    await document.documentElement.requestFullscreen();
+    await o.lock('landscape');
+  } catch { /* ignore */ }
+}
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export function Landing({ onStart, zooming }: Props) {
@@ -21,6 +30,7 @@ export function Landing({ onStart, zooming }: Props) {
 
   const tap = () => {
     if (zooming) return;
+    goLandscape();
     unlock(); // the door tap is the first gesture: the music starts here
     // a second tap skips the walk, and so does reduced motion
     if (phase !== 'idle' || reduced()) { timers.current.forEach(clearTimeout); timers.current = []; setPhase('in'); play.door(); onStart(); return; }
