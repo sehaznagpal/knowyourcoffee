@@ -434,3 +434,12 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
   /* the cup: 15% taller, its bottom still on the counter */
   .gallery.compact .room-glass { transform: scaleY(1.15); transform-origin: 50% 100%; }
 }
+
+/* ---- testing room: sound and bag top-right, 80% size, lined up with the mode pills; back button on the far left ---- */
+body:has(.ph-room) .ph-top { right: calc(env(safe-area-inset-right) + 12px); padding-right: 0; }
+body:has(.ph-room) .ph-top-right { gap: 8px; }
+body:has(.ph-room) .ph-top-right .ph-icon { width: 35px; height: 35px; }
+body:has(.ph-room) .ph-top-right .ph-icon svg { width: 21px; height: 21px; }
+.ph-back { left: calc(env(safe-area-inset-left) + 8px); }
+.arrow-btn.g-sound.in-room { width: 38px; height: 38px; }
+.arrow-btn.g-sound.in-room svg { width: 21px; height: 21px; }

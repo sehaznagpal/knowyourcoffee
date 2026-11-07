@@ -429,7 +429,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
       </div>
 
       {!compact ? (
-        <button type="button" className="arrow-btn g-sound" data-wt="sound" style={{ left: viewLeft + 24 }} aria-pressed={!soundOff} aria-label={soundOff ? 'Sound is off (S)' : 'Sound is on (S)'} onClick={toggleMuted}>
+        <button type="button" className={`arrow-btn g-sound${inRoom ? ' in-room' : ''}`} data-wt="sound" style={{ left: inRoom ? viewLeft + viewW - 24 - 38 : viewLeft + 24 }} aria-pressed={!soundOff} aria-label={soundOff ? 'Sound is off (S)' : 'Sound is on (S)'} onClick={toggleMuted}>
           <SpeakerIcon off={soundOff} />
         </button>
       ) : null}
