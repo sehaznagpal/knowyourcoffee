@@ -164,22 +164,23 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
 
 /* bag */
 .arrow-btn.g-bag { top: 680px; background: var(--lilac); } /* an arrow-btn: same size, border and offset shadow, just above the left arrow */
-.bag-fit { position: absolute; left: 50%; top: 50%; transform-origin: center; width: 980px; height: 700px; padding: 28px; display: flex; flex-direction: column; gap: 16px; outline: none; background: var(--beige); border: 2px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); }
-.bag-fit header { display: flex; align-items: center; gap: 24px; flex: none; height: 56px; }
+.bag-fit { position: absolute; left: 50%; top: 50%; transform-origin: center; width: 851px; height: 539px; padding: 40px; display: flex; flex-direction: column; outline: none; background: var(--beige); border: 2px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); }
+.bag-fit header { display: flex; align-items: center; gap: 24px; flex: none; height: 48px; margin-bottom: 24px; }
 .bag-fit h2 { margin: 0; font: 700 40px/1 'Excon', sans-serif; }
 .bag-filters { display: flex; gap: 6px; }
 .bag-filter { height: 34px; padding: 0 14px; cursor: pointer; background: var(--beige); border: 2px solid var(--ink); border-radius: 999px; font: 400 15px 'Excon', sans-serif; color: var(--ink); }
 .bag-filter[aria-pressed='true'] { background: var(--lilac); }
 .arrow-btn.bag-x { position: static; margin-left: auto; width: 48px; height: 48px; }
-.bag-body { flex: 1; min-height: 0; display: flex; align-items: center; gap: 36px; }
-.bag-left { flex: 0 0 392px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.bag-bar { height: 40px; }
+.bag-body { flex: none; display: flex; align-items: flex-start; gap: 32px; }
+.bag-left { flex: none; width: 239px; display: flex; flex-direction: column; }
 .bag-bigwrap { position: relative; flex: none; }
 .bag-big { cursor: pointer; position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-.bag-bar { gap: 8px; }
-.arrow-btn.bag-step { position: static; width: 40px; height: 40px; flex: none; }
-.bag-right { flex: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
-.bag-rbar { height: 40px; display: flex; align-items: center; }
+.bag-bar { margin-top: 16px; width: 239px; height: 24px; display: flex; align-items: center; justify-content: space-between; gap: 0; }
+.bag-bar .btn-inline { height: 24px; padding: 0 10px; font: 400 11px 'Excon', sans-serif; border-radius: 999px; box-shadow: 2px 2px 0 var(--ink); }
+.arrow-btn.bag-step { position: static; width: 24px; height: 24px; flex: none; box-shadow: 2px 2px 0 var(--ink); }
+.arrow-btn.bag-step svg { width: 12px; height: 12px; }
+.bag-right { flex: none; width: 496px; display: flex; flex-direction: column; align-items: flex-end; }
+.bag-rbar { margin-top: 16px; height: 24px; display: flex; align-items: center; }
 .bag-grid { display: grid; grid-template-columns: repeat(6, 76px); grid-auto-rows: 109px; gap: 8px; }
 .bag-card { position: relative; width: 76px; height: 109px; padding: 0; overflow: hidden; cursor: pointer; background: var(--beige); border: 2px solid var(--ink); transition: translate 120ms ease-out, opacity 120ms; }
 .bag-strip { position: absolute; left: 0; right: 0; top: 0; height: 4px; z-index: 2; border-bottom: 2px solid var(--ink); }
@@ -202,8 +203,8 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
 .room-skirting { left: -1000px; width: 3280px; }
 .counter-art { position: absolute; left: -960px; width: 3200px; height: 112px; pointer-events: none; }
 .shelf-board { position: absolute; height: 18px; background: var(--offwhite); border: 3px solid var(--ink); box-shadow: 0 0 0 3px var(--beige); }
-/* a small hanging board: coffee brown, ink border, offset shadow, two short strings */
-.shelf-sign { position: absolute; translate: -50% 0; padding: 3px 12px 4px; background: #7A4A33; border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); font: 700 14px/1.2 'Excon', sans-serif; text-transform: lowercase; color: var(--beige); white-space: nowrap; }
+/* a small hanging board: beige, ink border, offset shadow, two short strings */
+.shelf-sign { position: absolute; translate: -50% 0; padding: 3px 12px 4px; background: var(--beige); border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); font: 700 14px/1.2 'Excon', sans-serif; text-transform: lowercase; color: var(--ink); white-space: nowrap; }
 .shelf-sign::before, .shelf-sign::after { content: ''; position: absolute; top: -12px; width: 2px; height: 10px; background: var(--ink); }
 .shelf-sign::before { left: 18%; }
 .shelf-sign::after { right: 18%; }
@@ -270,8 +271,8 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
 .gallery.compact .placard { scale: 1.5; transform-origin: 50% 0; }
 .gallery.compact .look-hint { font-size: 18px; }
 .gallery.compact .g-wing-tag { font-size: 26px; }
-.gallery.compact .g-door-sign, .gallery.compact /* a small hanging board: coffee brown, ink border, offset shadow, two short strings */
-.shelf-sign { position: absolute; translate: -50% 0; padding: 3px 12px 4px; background: #7A4A33; border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); font: 700 14px/1.2 'Excon', sans-serif; text-transform: lowercase; color: var(--beige); white-space: nowrap; }
+.gallery.compact .g-door-sign, .gallery.compact /* a small hanging board: beige, ink border, offset shadow, two short strings */
+.shelf-sign { position: absolute; translate: -50% 0; padding: 3px 12px 4px; background: var(--beige); border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); font: 700 14px/1.2 'Excon', sans-serif; text-transform: lowercase; color: var(--ink); white-space: nowrap; }
 .shelf-sign::before, .shelf-sign::after { content: ''; position: absolute; top: -12px; width: 2px; height: 10px; background: var(--ink); }
 .shelf-sign::before { left: 18%; }
 .shelf-sign::after { right: 18%; }

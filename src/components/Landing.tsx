@@ -30,8 +30,7 @@ export function Landing({ onStart, zooming }: Props) {
   return (
     <div className={`landing${zooming ? ' zooming' : ''}`}>
       <div className="landing-art" dangerouslySetInnerHTML={{ __html: landing }} />
-      <div className="landing-board" aria-hidden="true" />
-      <p className="landing-sign">the coffees on every menu,<br />hung up like art.<br />walk in, peek inside each cup,<br />then test yourself.</p>
+      <p className="landing-sign">never sure what coffee to order? welcome to the coffee tour to walk around, understand what goes in each cup, and make your next order easy!</p>
       <div className={`landing-char${phase === 'in' ? ' is-in' : ''}`} style={{ left: (phase === 'idle' ? HOME_X : DOOR_X) - CHAR_H * 0.2, top: FEET - CHAR_H, transitionDuration: phase === 'walk' || phase === 'in' ? `${WALK_MS}ms` : '0ms' }} aria-hidden="true">
         <AnimatedCharacter state={phase === 'walk' ? 'walk' : phase === 'in' ? 'idle' : 'idle'} facing={1} height={CHAR_H} />
       </div>
