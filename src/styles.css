@@ -10,6 +10,7 @@
   --offwhite: #f7f5f1;
   --ink: #1e1e1e;
   --blue: #8fe5ff;
+  --lilac: #c9b6cb;
   --shadow: 4px 4px 0 var(--ink);
 }
 
@@ -252,3 +253,12 @@ body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-s
 }
 
 .band-cap { position: absolute; top: 467px; width: 4px; height: 82px; background: var(--offwhite); pointer-events: none; }
+
+/* gallery screen: black wall with the faint grid above the floor line, beige below; the grid slides with the camera */
+.viewport.screen-gallery { background: linear-gradient(var(--ink-wall) 0 0) top / 100% var(--split) no-repeat, var(--beige); }
+.viewport.screen-gallery::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: var(--split);
+  background-image: linear-gradient(to bottom, var(--grid) 0 2px, transparent 2px), linear-gradient(to right, var(--grid) 0 2px, transparent 2px);
+  background-size: calc(20px * var(--s)) calc(20px * var(--s));
+  background-position: calc(var(--sl, 0px) - var(--cam, 0px) - 1px * var(--s)) calc(var(--st, 0px) - 1px * var(--s));
+}

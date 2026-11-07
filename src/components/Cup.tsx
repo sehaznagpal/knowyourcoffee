@@ -60,7 +60,7 @@ export function Cup({ drink, x, popDelay, active, refCb, onEnter, onLeave, onTap
 
 // The mug's black rib marks sit inside the liquid area, so they are drawn again above the liquid.
 let ribCache = '';
-function ribs() {
+export function ribs() {
   if (ribCache) return ribCache;
   const svg = vessels['01'];
   const paths = [...svg.matchAll(/<path[^>]*fill="black"[^>]*\/>/g)].map((m) => m[0]).slice(1);
