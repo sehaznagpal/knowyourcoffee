@@ -16,7 +16,7 @@ const WALK_MS = 800;
 async function goLandscape() {
   try {
     const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
-    if (!o?.lock) return;
+    if (!o?.lock || !document.documentElement.requestFullscreen) return; // iPhone Safari has neither: nothing happens, the door still opens
     await document.documentElement.requestFullscreen();
     await o.lock('landscape');
   } catch { /* ignore */ }

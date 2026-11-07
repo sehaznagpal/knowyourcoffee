@@ -245,7 +245,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
     L.cx = clamp(L.x, hv0, WORLD_W - hv0);
     let raf = 0, last = performance.now(), facingNow: 1 | -1 = 1;
     const loop = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
+      const dt = Math.min(0.1, (now - last) / 1000); // real frame time, so Low Power Mode (30 fps) keeps the same speed
       last = now;
       const held = L.keys.has('ArrowLeft') || L.keys.has('KeyA') ? -1 : L.keys.has('ArrowRight') || L.keys.has('KeyD') ? 1 : L.hold;
       const hv = L.viewW / 2;

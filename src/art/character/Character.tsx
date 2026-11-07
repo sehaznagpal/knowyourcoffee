@@ -356,7 +356,7 @@ export function useCharacterMotion(state: CharacterState, facing: 1 | -1, steps 
     let raf = 0, last = performance.now();
     let sent: Frame | null = null;
     const loop = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
+      const dt = Math.min(0.1, (now - last) / 1000); // real frame time, so Low Power Mode (30 fps) keeps the same speed
       last = now;
       const L = live.current;
       const age = (now - L.since) / 1000;

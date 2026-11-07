@@ -16,6 +16,10 @@ let fadeInDone = false;
 const subs = new Set<() => void>();
 const emit = () => subs.forEach((f) => f());
 
+// The track is fetched ahead of the first tap, so the tap itself only has to create the context and decode: Safari lets audio start from a gesture, not later.
+let prefetched: Promise<ArrayBuffer | null> | null = null;
+if (typeof window !== 'undefined') window.addEventListener('load', () => window.setTimeout(() => { prefetched = fetch(MUSIC_URL).then((r) => r.arrayBuffer()).catch(() => null); }, 500));
+
 const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const target = () => (muted ? 0 : ducked ? GAIN.duck : GAIN.normal);
 function ramp(sec: number) {
@@ -54,6 +58,10 @@ export function unlock() {
       if (!ctx) return;
       if (document.hidden) ctx.suspend(); else ctx.resume();
     });
+    // iPhone Safari puts the context in an 'interrupted' state after a call or the lock screen: wake it on the next touch
+    const wake = () => { if (ctx && ctx.state !== 'running' && !document.hidden) ctx.resume(); };
+    document.addEventListener('touchend', wake, true);
+    document.addEventListener('pointerdown', wake, true);
   }
   if (ctx.state === 'suspended' && !document.hidden) ctx.resume();
   if (!started) { started = true; loadMusic(); }
@@ -69,7 +77,12 @@ export function armGestureUnlock() {
 // ---- music: the track loops with a 2 s crossfade at the loop point ----
 async function loadMusic() {
   try {
-    const buf = await ctx!.decodeAudioData(await (await fetch(MUSIC_URL)).arrayBuffer());
+    const data = (await prefetched) ?? (await (await fetch(MUSIC_URL)).arrayBuffer());
+    // older Safari only has the callback form of decodeAudioData
+    const buf = await new Promise<AudioBuffer>((res, rej) => {
+      const p = ctx!.decodeAudioData(data, res, rej) as Promise<AudioBuffer> | undefined;
+      p?.then?.(res, rej);
+    });
     startLoop(buf);
   } catch { /* no music: effects still work */ }
 }
