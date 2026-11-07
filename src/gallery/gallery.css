@@ -418,4 +418,3 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
   .bag-fit.is-compact .arrow-btn.bag-step svg { width: calc(14px / var(--fit)); height: calc(14px / var(--fit)); }
   .bag-fit.is-compact .bag-down b { font-size: calc(14px / var(--fit)); }
 }
-}
