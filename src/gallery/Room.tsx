@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { TestGlass } from '../components/TestGlass';
 import { COLOR, LABEL } from '../data/colors';
 import { DRINKS, type Drink, type Ingredient } from '../data/drinks';
@@ -47,10 +48,11 @@ type Props = {
   onCheer: () => void;
   onAnswered: () => void;
   onLeave: () => void;
+  compact: boolean; // phone landscape: the controls move to a fixed bar in real pixels
 };
 
 /** The testing room: a barista studio. She orders, you pour from the jars on the shelf into the glass, serve it, and get checked. */
-export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, onLeave }: Props) {
+export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, onLeave, compact }: Props) {
   const [mode, setMode] = useState<Mode>('mix');
   const [progress, setProgress] = useState<Progress>(loadProgress);
   const deck = useRef<Deck | null>(null);
@@ -146,19 +148,8 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, onLeav
     </button>
   );
 
-  return (
-    <div className="g-room">
-      {/* wall shelf */}
-      {ROW_TOP.map((t, r) => (
-        <div key={r} className="shelf-board" style={{ left: SHELF_X - 16, top: t + 74, width: (r === 0 ? ROW1.length : ROW2.length) * PITCH + 4 }} />
-      ))}
-      {CAPTIONS.map((c) => (
-        <span key={c.text} className="shelf-cap" style={c.row === 0 ? { left: SHELF_X + c.at * PITCH, top: 26 } : { left: SHELF_X - 70, top: ROW_TOP[1] + 34 }}>{c.text}</span>
-      ))}
-      {ROW1.map((ing, i) => jar(ing, i, 0))}
-      {ROW2.map((ing, i) => jar(ing, i, 1))}
-
-      {/* her order */}
+  const bubbleEl = (
+    <>
       {drink ? (
         <div className="room-bubble" aria-live="polite">
           <span>make me a</span>
@@ -172,35 +163,29 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, onLeav
           <small>{mode === 'seen' ? 'walk the gallery, then come back.' : 'switch to mix to practise again.'}</small>
         </div>
       ) : null}
-
-      {/* the counter, with the glass on it */}
-      <div className="counter-art" style={{ top: COUNTER_TOP }} aria-hidden="true">
-        <Art width={3200} height={112} shapes={[
-          { d: closed([[0, 0], [3200, 0], [3200, 28], [0, 28]], 201, 80), fill: PAPER, w: 5 },
-          { d: closed([[0, 28], [3200, 28], [3200, 110], [0, 110]], 202, 80), fill: INK, w: 5 },
-        ]} />
-      </div>
-      <div className="room-glass" style={{ left: 640 - GLASS_W / 2, top: COUNTER_TOP - GLASS_H + 4, width: GLASS_W, height: GLASS_H }}>
-        <TestGlass layers={mine} />
-        {pour ? <span key={pour.n} className="stream" style={{ background: COLOR[pour.ing] }} /> : null}
-        {result?.ok ? <span className="room-stamp">NAILED IT</span> : null}
-      </div>
-
+    </>
+  );
+  const tabsEl = (
       <div className="room-tabs" role="group" aria-label="Question mode">
         {MODES.map((m) => <button key={m.id} type="button" className="room-tab" aria-pressed={mode === m.id} onClick={() => setMode(m.id)}>{m.label}</button>)}
       </div>
-
+  );
+  const buttonsEl = (
       <div className="counter-buttons">
         <button type="button" className="btn-inline" disabled={dis || !pours.length} onClick={() => setPours((p) => p.slice(0, -1))}>undo</button>
         <button type="button" className="btn-inline" disabled={dis || !pours.length} onClick={() => setPours([])}>clear</button>
         <button type="button" className="btn-inline" disabled={dis} onClick={() => setHint(true)}>hint</button>
         <button type="button" className="btn-primary" disabled={dis || !pours.length} onClick={serve}>SERVE IT</button>
       </div>
-
+  );
+  const statsEl = (
       <p className="room-stats">{stats}</p>
+  );
+  const backEl = (
       <button type="button" className="room-back" onClick={onLeave}>back to the gallery</button>
-
-      {/* result */}
+  );
+  const resultEl = (
+    <>
       {result && drink ? (
         <div className="room-result" role="status">
           {!result.ok ? (
@@ -217,6 +202,38 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, onLeav
           </div>
         </div>
       ) : null}
+    </>
+  );
+
+  return (
+    <div className="g-room">
+      {/* wall shelf */}
+      {ROW_TOP.map((t, r) => (
+        <div key={r} className="shelf-board" style={{ left: SHELF_X - 16, top: t + 74, width: (r === 0 ? ROW1.length : ROW2.length) * PITCH + 4 }} />
+      ))}
+      {CAPTIONS.map((c) => (
+        <span key={c.text} className="shelf-cap" style={c.row === 0 ? { left: SHELF_X + c.at * PITCH, top: 26 } : { left: SHELF_X - 70, top: ROW_TOP[1] + 34 }}>{c.text}</span>
+      ))}
+      {ROW1.map((ing, i) => jar(ing, i, 0))}
+      {ROW2.map((ing, i) => jar(ing, i, 1))}
+
+      {!compact ? bubbleEl : null}
+
+      {/* the counter, with the glass on it */}
+      <div className="counter-art" style={{ top: COUNTER_TOP }} aria-hidden="true">
+        <Art width={3200} height={112} shapes={[
+          { d: closed([[0, 0], [3200, 0], [3200, 28], [0, 28]], 201, 80), fill: PAPER, w: 5 },
+          { d: closed([[0, 28], [3200, 28], [3200, 110], [0, 110]], 202, 80), fill: INK, w: 5 },
+        ]} />
+      </div>
+      <div className="room-glass" style={{ left: 640 - GLASS_W / 2, top: COUNTER_TOP - GLASS_H + 4, width: GLASS_W, height: GLASS_H }}>
+        <TestGlass layers={mine} />
+        {pour ? <span key={pour.n} className="stream" style={{ background: COLOR[pour.ing] }} /> : null}
+        {result?.ok ? <span className="room-stamp">NAILED IT</span> : null}
+      </div>
+
+      {!compact ? <>{tabsEl}{buttonsEl}{statsEl}{backEl}{resultEl}</> : null}
+      {compact ? createPortal(<div className="ph-room">{bubbleEl}{resultEl}<div className="ph-room-bar">{tabsEl}<div className="ph-room-row">{buttonsEl}</div><div className="ph-room-foot">{statsEl}{backEl}</div></div></div>, document.body) : null}
 
       {fly ? (
         <div ref={flyEl} className="fly-card" style={{ width: CARD_W, height: CARD_H }} aria-hidden="true">

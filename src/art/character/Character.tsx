@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { createContext, memo, useContext, useEffect, useRef, useState, type CSSProperties } from 'react';
 import './character.css';
 import {
-  BEIGE, BLUE, CHAR_H, CHAR_W, CX, HAIR_FIT, HIP_X, HIP_Y, INK, LEG_LEN, LILAC, NECK_Y, PAPER, SHAPES as S, arm, face, hairPoint, handPath,
+  BEIGE, BLUE, CHAR_H, CHAR_W, CX, HAIR_FIT, HIP_X, HIP_Y, INK, LEG_LEN, LILAC, NECK_Y, PAPER, SHAPES as S, arm, face, hairPoint, handPath, type HandKind,
 } from './geometry';
 import { HAIR } from './hair';
 import { IDLE, POSES, RUN, WALK, cyclePose, lerpPose, type Pose } from './poses';
@@ -37,6 +37,95 @@ const O = ({ d, fill = 'none', w = W, stroke = INK, evenodd = false }: PathProps
 };
 // Teleport order: 0 = feet, 1 = head
 const k = (v: number) => ({ '--k': v }) as CSSProperties;
+
+// Pieces that change rarely are memoised: while she walks only the legs, arms and bag are redrawn every frame.
+const StaticBody = memo(function StaticBody() {
+  return (
+    <>
+      <g id="trousers" style={k(0.2)}><O d={S.hips} fill={INK} /></g>
+      <g id="tee" style={k(0.35)}><O d={S.tee} fill={BLUE} /></g>
+      <g id="top" style={k(0.4)}><O d={S.top} fill={LILAC} /></g>
+      <g style={k(0.65)}><O d={S.neck} fill={PAPER} /></g>
+      <g id="jacket" style={k(0.5)}><O d={S.panelR} fill={PAPER} /><O d={S.panelL} fill={PAPER} /></g>
+    </>
+  );
+});
+
+const Legs = memo(function Legs({ rt, rtShoe, lt, ltShoe }: { rt: string; rtShoe: string; lt: string; ltShoe: string }) {
+  return (
+    <>
+      <g id="leg-right" transform={rt} style={k(0.1)}>
+        <O d={S.leg} fill={INK} />
+        <O d={S.ankle} fill={PAPER} w={6} />
+        <g id="shoe-right" transform={rtShoe} style={k(0)}>
+          <O d={S.shoe} fill={BLUE} />
+          {S.laces.map((d, i) => <O key={i} d={d} w={4} />)}
+        </g>
+      </g>
+      <g id="leg-left" transform={lt} style={k(0.1)}>
+        <O d={S.leg} fill={INK} />
+        <O d={S.seam} stroke={PAPER} w={3.5} />
+        <O d={S.ankle} fill={PAPER} w={6} />
+        <g id="shoe-left" transform={ltShoe} style={k(0)}>
+          <O d={S.shoe} fill={BLUE} />
+          {S.laces.map((d, i) => <O key={i} d={d} w={4} />)}
+        </g>
+      </g>
+    </>
+  );
+});
+
+const Head = memo(function Head({ tilt, turn, bunDy }: { tilt: number; turn: number; bunDy: number }) {
+  const f = face(turn);
+  return (
+    <g className="head" transform={`rotate(${tilt} ${CX} ${NECK_Y})`} style={k(0.85)}>
+      <g id="head"><O d={S.face} fill={PAPER} /></g>
+      {/* hair: potrace of the reference close-up, kept as traced; solid ink, no outline stroke */}
+      <g id="hair" style={k(1)} transform={HAIR_T}>
+        <g className="bun" transform={`translate(0 ${bunDy / HAIR_FIT.scale})`}><O d={HAIR.bun} fill={INK} w={0} evenodd /></g>
+        <O d={HAIR.cap} fill={INK} w={0} evenodd />
+      </g>
+      {WISPS.map((wi, i) => (
+        <g key={i} className="strand" style={{ transformOrigin: `${wi.at[0]}px ${wi.at[1]}px`, animationDelay: `${-i * 0.9}s` }}>
+          <g transform={HAIR_T} style={k(1)}><O d={wi.d} fill={INK} w={0} evenodd /></g>
+        </g>
+      ))}
+      <g id="face">
+        <g className="eyes"><O d={f.eyeL} fill={INK} w={0} /><O d={f.eyeR} fill={INK} w={0} /></g>
+        <O d={f.nose} w={4} />
+        <O d={f.smile} w={4} />
+      </g>
+      <g id="earring"><O d={f.stud} fill={BLUE} w={3.5} /></g>
+    </g>
+  );
+});
+
+type ArmProps = { sleeve: string; wx: number; wy: number; angle: number };
+const FreeArm = memo(function FreeArm({ sleeve, wx, wy, angle, flip, hand }: ArmProps & { flip: boolean; hand: HandKind }) {
+  return (
+    <g style={k(0.55)}>
+      <g id="hand-right" transform={`translate(${wx} ${wy}) rotate(${angle}) translate(-12 0) scale(1 ${flip ? -1 : 1})`}>
+        <O d={handPath(hand)} fill={PAPER} />
+      </g>
+      <O d={sleeve} fill={PAPER} />
+    </g>
+  );
+});
+
+const BagArm = memo(function BagArm({ sleeve, wx, wy, angle, gx, gy, bagAngle }: ArmProps & { gx: number; gy: number; bagAngle: number }) {
+  return (
+    <g style={k(0.3)}>
+      <g id="bag" transform={`translate(${gx} ${gy - 6}) rotate(${bagAngle})`}>
+        <O d={S.bagHandle} stroke={INK} w={W} />
+        <O d={S.bagBody} fill={LILAC} />
+      </g>
+      <g id="hand" transform={`translate(${wx} ${wy}) rotate(${angle}) translate(-12 0)`}>
+        <O d={handPath('mitten')} fill={PAPER} />
+      </g>
+      <O d={sleeve} fill={PAPER} />
+    </g>
+  );
+});
 
 type Props = {
   pose?: Pose;
@@ -85,73 +174,18 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
   const edge = height && typeof height === 'number' ? (edgePx * vb[3]) / height : 0;
   const figure = () => (
     <g transform={`translate(${CX} 0) scale(${sx} 1) translate(${-CX} 0)`}>
-        <g id="leg-right" transform={rt.transform} style={k(0.1)}>
-          <O d={S.leg} fill={INK} />
-          <O d={S.ankle} fill={PAPER} w={6} />
-          <g id="shoe-right" transform={rt.shoe} style={k(0)}>
-            <O d={S.shoe} fill={BLUE} />
-            {S.laces.map((d, i) => <O key={i} d={d} w={4} />)}
-          </g>
-        </g>
-        <g id="leg-left" transform={lt.transform} style={k(0.1)}>
-          <O d={S.leg} fill={INK} />
-          <O d={S.seam} stroke={PAPER} w={3.5} />
-          <O d={S.ankle} fill={PAPER} w={6} />
-          <g id="shoe-left" transform={lt.shoe} style={k(0)}>
-            <O d={S.shoe} fill={BLUE} />
-            {S.laces.map((d, i) => <O key={i} d={d} w={4} />)}
-          </g>
-        </g>
-
-        <g transform={`translate(${pose.shiftX} ${hipY - HIP_Y}) rotate(${pose.lean} ${CX} ${HIP_Y})`}>
-          <g className="breath">
-            <g id="trousers" style={k(0.2)}><O d={S.hips} fill={INK} /></g>
-            <g id="tee" style={k(0.35)}><O d={S.tee} fill={BLUE} /></g>
-            <g id="top" style={k(0.4)}><O d={S.top} fill={LILAC} /></g>
-            <g style={k(0.65)}><O d={S.neck} fill={PAPER} /></g>
-            <g id="jacket" style={k(0.5)}><O d={S.panelR} fill={PAPER} /><O d={S.panelL} fill={PAPER} /></g>
-
-            <g className="head" transform={`rotate(${pose.tilt} ${CX} ${NECK_Y})`} style={k(0.85)}>
-              <g id="head"><O d={S.face} fill={PAPER} /></g>
-              {/* hair: potrace of the reference close-up, kept as traced; solid ink, no outline stroke */}
-              <g id="hair" style={k(1)} transform={HAIR_T}>
-                <g className="bun" transform={`translate(0 ${bunDy / HAIR_FIT.scale})`}><O d={HAIR.bun} fill={INK} w={0} evenodd /></g>
-                <O d={HAIR.cap} fill={INK} w={0} evenodd />
-              </g>
-              {WISPS.map((wi, i) => (
-                <g key={i} className="strand" style={{ transformOrigin: `${wi.at[0]}px ${wi.at[1]}px`, animationDelay: `${-i * 0.9}s` }}>
-                  <g transform={HAIR_T} style={k(1)}><O d={wi.d} fill={INK} w={0} evenodd /></g>
-                </g>
-              ))}
-              <g id="face">
-                <g className="eyes"><O d={f.eyeL} fill={INK} w={0} /><O d={f.eyeR} fill={INK} w={0} /></g>
-                <O d={f.nose} w={4} />
-                <O d={f.smile} w={4} />
-              </g>
-              <g id="earring"><O d={f.stud} fill={BLUE} w={3.5} /></g>
-            </g>
-
-            {/* free arm: sleeve from shoulder to a wide cuff, hand out of the cuff */}
-            <g style={k(0.55)}>
-              <g id="hand-right" transform={`translate(${aR.wrist[0]} ${aR.wrist[1]}) rotate(${aR.angle}) translate(-12 0) scale(1 ${handFlipR ? -1 : 1})`}>
-                <O d={handPath(pose.handR)} fill={PAPER} />
-              </g>
-              <O d={aR.sleeve} fill={PAPER} />
-            </g>
-            {/* bag arm: the bag hangs from the hand */}
-            <g style={k(0.3)}>
-              <g id="bag" transform={`translate(${grip[0]} ${grip[1] - 6}) rotate(${bagAngle})`}>
-                <O d={S.bagHandle} stroke={INK} w={W} />
-                <O d={S.bagBody} fill={LILAC} />
-              </g>
-              <g id="hand" transform={`translate(${aL.wrist[0]} ${aL.wrist[1]}) rotate(${aL.angle}) translate(-12 0)`}>
-                <O d={handPath('mitten')} fill={PAPER} />
-              </g>
-              <O d={aL.sleeve} fill={PAPER} />
-            </g>
-          </g>
+      <Legs rt={rt.transform} rtShoe={rt.shoe} lt={lt.transform} ltShoe={lt.shoe} />
+      <g transform={`translate(${pose.shiftX} ${hipY - HIP_Y}) rotate(${pose.lean} ${CX} ${HIP_Y})`}>
+        <g className="breath">
+          <StaticBody />
+          <Head tilt={Math.round(pose.tilt * 10) / 10} turn={Math.round(t * 50) / 50} bunDy={Math.round(bunDy * 10) / 10} />
+          {/* free arm: sleeve from shoulder to a wide cuff, hand out of the cuff */}
+          <FreeArm sleeve={aR.sleeve} wx={aR.wrist[0]} wy={aR.wrist[1]} angle={aR.angle} flip={handFlipR} hand={pose.handR} />
+          {/* bag arm: the bag hangs from the hand */}
+          <BagArm sleeve={aL.sleeve} wx={aL.wrist[0]} wy={aL.wrist[1]} angle={aL.angle} gx={Math.round(grip[0] * 10) / 10} gy={Math.round(grip[1] * 10) / 10} bagAngle={Math.round(bagAngle * 10) / 10} />
         </g>
       </g>
+    </g>
   );
 
   return (
@@ -182,6 +216,14 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
 const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TELEPORT_MS = 330;
 
+type Frame = { pose: Pose; turn: number; erase: number; opacity: number; bunDy: number };
+const near = (a: number, b: number) => Math.abs(a - b) < 0.02;
+const same = (a: Frame | null, b: Frame) =>
+  !!a && near(a.turn, b.turn) && near(a.erase, b.erase) && near(a.opacity, b.opacity) && near(a.bunDy, b.bunDy) &&
+  near(a.pose.legL.a, b.pose.legL.a) && near(a.pose.legR.a, b.pose.legR.a) && near(a.pose.legL.lift ?? 0, b.pose.legL.lift ?? 0) && near(a.pose.legR.lift ?? 0, b.pose.legR.lift ?? 0) &&
+  near(a.pose.armL.a1, b.pose.armL.a1) && near(a.pose.armL.a2, b.pose.armL.a2) && near(a.pose.armR.a1, b.pose.armR.a1) && near(a.pose.armR.a2, b.pose.armR.a2) &&
+  near(a.pose.lean, b.pose.lean) && near(a.pose.shiftX, b.pose.shiftX) && near(a.pose.tilt, b.pose.tilt) && near(a.pose.flareR, b.pose.flareR) && a.pose.handR === b.pose.handR;
+
 export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
   const [frame, setFrame] = useState({ pose: IDLE, turn: facing as number, erase: state === 'teleport-in' ? 1 : 0, opacity: 1, bunDy: 0 });
   const live = useRef({ pose: IDLE, turn: facing as number, state, facing, since: performance.now(), dy: 0, bun: 0 });
@@ -196,6 +238,7 @@ export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
 
   useEffect(() => {
     let raf = 0, last = performance.now();
+    let sent: Frame | null = null;
     const loop = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
@@ -223,7 +266,8 @@ export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
       if (L.state === 'teleport-out') { erase = Math.min(1, (age * 1000) / TELEPORT_MS); }
       if (L.state === 'teleport-in') { erase = Math.max(0, 1 - (age * 1000) / TELEPORT_MS); }
       if (reduced() && L.state.startsWith('teleport')) { opacity = L.state === 'teleport-out' ? Math.max(0, 1 - age / 0.2) : Math.min(1, age / 0.2); erase = 0; }
-      setFrame({ pose: L.pose, turn: L.turn, erase, opacity, bunDy: reduced() ? 0 : L.bun });
+      const next = { pose: L.pose, turn: L.turn, erase, opacity, bunDy: reduced() ? 0 : L.bun };
+      if (!same(sent, next)) { sent = next; setFrame(next); } // resting poses do not re-render at all
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

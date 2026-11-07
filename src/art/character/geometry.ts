@@ -76,7 +76,15 @@ export const SHAPES = {
 };
 
 // Face features, as a function of how far she is turned (1 = facing right, 0 = facing us)
+const faceCache = new Map<number, ReturnType<typeof makeFace>>();
+/** Face features for how far she is turned (cached: the pose is redrawn every frame while she walks). */
 export function face(turn: number) {
+  const key = Math.round(turn * 50);
+  let f = faceCache.get(key);
+  if (!f) { f = makeFace(key / 50); faceCache.set(key, f); }
+  return f;
+}
+function makeFace(turn: number) {
   const t = 7 * turn;
   return {
     eyeL: smooth(ellipse(CX - 15 + t, 106, 4.8, 6.4, 8), 40),
@@ -94,7 +102,8 @@ const HANDS: Record<HandKind, Pt[]> = {
   point: [[0, -17], [20, -17], [28, -30], [40, -29], [36, -14], [82, -10], [86, -2], [36, 3], [38, 18], [0, 17]],
   open: [[0, -20], [10, -20], [18, -44], [34, -46], [36, -24], [64, -26], [72, -4], [66, 24], [0, 22]],
 };
-export const handPath = (kind: HandKind) => sketch(HANDS[kind], { seed: 50, jitter: 0.3, step: 14 });
+const handCache: Partial<Record<HandKind, string>> = {};
+export const handPath = (kind: HandKind) => (handCache[kind] ??= sketch(HANDS[kind], { seed: 50, jitter: 0.3, step: 14 }));
 
 // ---- sleeves: a tube through shoulder, elbow, wrist with its own widths, flaring into a wide cuff ----
 function tube(J: Pt[], Wd: number[]): Pt[] {
@@ -130,7 +139,16 @@ function tube(J: Pt[], Wd: number[]): Pt[] {
 const rad = (deg: number) => (deg * Math.PI) / 180;
 
 /** Forward kinematics for one arm. Angles are absolute screen degrees: 0 = right, 90 = down, -90 = up. */
+const armCache = new Map<string, ReturnType<typeof makeArm>>();
+/** Arm geometry, cached on angles rounded to half a degree (walk and run cycles repeat). */
 export function arm(side: 'L' | 'R', a1: number, a2: number, flare: number) {
+  const q1 = Math.round(a1 * 2) / 2, q2 = Math.round(a2 * 2) / 2, qf = Math.round(flare);
+  const key = `${side}|${q1}|${q2}|${qf}`;
+  let r = armCache.get(key);
+  if (!r) { r = makeArm(side, q1, q2, qf); if (armCache.size > 4000) armCache.clear(); armCache.set(key, r); }
+  return r;
+}
+function makeArm(side: 'L' | 'R', a1: number, a2: number, flare: number) {
   const S = SHOULDER[side];
   const E: Pt = [S[0] + UPPER * Math.cos(rad(a1)), S[1] + UPPER * Math.sin(rad(a1))];
   const W: Pt = [E[0] + FORE * Math.cos(rad(a2)), E[1] + FORE * Math.sin(rad(a2))];

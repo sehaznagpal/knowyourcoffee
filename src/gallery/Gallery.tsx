@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { frames as framesArt } from '../art-loader';
 import { AnimatedCharacter, type CharacterState } from '../art/character/Character';
 import type { Drink } from '../data/drinks';
 import { sketch } from '../art/character/sketch';
 import { clearSeenAndTour, getTourAt, markSeen, seenIds, setTourAt } from './saved';
-import { BagButton, BagPanel, type BagState } from './Bag';
+import { BagButton, BagPanel, bagCount, type BagState } from './Bag';
+import { DRINKS } from '../data/drinks';
 import { CoffeeCard } from './CoffeeCard';
 import { loadProgress, resetProgress } from '../logic/storage';
 import { MapStrip } from './MapView';
 import { SearchBox, type SearchHandle } from './SearchBox';
 import { TestingRoom } from './Room';
+import { useCompact } from './compact';
+import { PhoneUI } from './PhoneUI';
 import { Foreground, World } from './World';
 import {
   CHAR_H, CHAR_W, DEAD_ZONE, DOOR_X, FEET_Y, FOREGROUND_PARALLAX, FRAMES, FRAME_PITCH, PROXIMITY, ROOMS, START_X, STAGE_W, TEST_DOOR_X, TOUR_X,
@@ -50,7 +54,7 @@ function MotionLines() {
 type Teleport = { room?: 'enter' | 'leave'; phase: 'turn' | 'out' | 'pan' | 'in' | 'paper'; t0: number; start: number; x: number; frame?: string; point?: boolean; fromCx: number; toCx: number; wipe: boolean; jumped: boolean };
 const sameTarget = (a: Target, b: Target) => a === b || (!!a && !!b && a.kind === b.kind && (a.kind !== 'frame' || a.id === (b as { id: string }).id));
 
-function WalkButton({ dir, left, onHold }: { dir: -1 | 1; left: number; onHold: (d: -1 | 0 | 1) => void }) {
+function WalkButton({ dir, left, onHold }: { dir: -1 | 1; left: number; onHold: (d: -1 | 0 | 1, run?: boolean) => void }) {
   return (
     <button
       type="button"
@@ -76,6 +80,14 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
   const fgEl = useRef<HTMLDivElement>(null);
   const charEl = useRef<HTMLDivElement>(null);
   const charInner = useRef<HTMLDivElement>(null);
+  const gridEl = useRef<HTMLDivElement>(null);
+  const [vpEl, setVpEl] = useState<HTMLElement | null>(null);
+  useEffect(() => setVpEl(rootEl.current!.closest('.viewport')), []);
+  const compact = useCompact();
+  // she stands about 38% of the screen height on a desktop and about 45% on a phone held sideways
+  const charH = compact ? 374 : CHAR_H;
+  const charW = Math.round((charH * 316) / 768);
+  const feetY = compact ? 760 : FEET_Y;
   const startInRoom = useRef(new URLSearchParams(window.location.search).get('test') === '1');
 
   const [vw, setVw] = useState(window.innerWidth);
@@ -107,10 +119,11 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
     x: START_X, cx: START_X, keys: new Set<string>(), hold: 0 as -1 | 0 | 1, walked: 0, face: 1 as 1 | -1,
     waveUntil: startInRoom.current ? 0 : performance.now() + 1800, pointUntil: 0, target: null as Target, cstate: 'wave' as CharacterState, hint: true,
     tp: null as Teleport | null, auto: null as Auto, tour: null as number | null, tourWait: false, openAt: 0, openId: '',
-    viewW, scale, active, modal: false, bag: false, card: false, mapOpen: false,
+    queued: null as 'enter' | 'leave' | null, viewW, scale, active, modal: false, bag: false, card: false, mapOpen: false, charW, holdRun: false,
     room: startInRoom.current, returnX: START_X, mood: 'order' as 'order' | 'cheer' | 'idle',
   });
   live.current.viewW = viewW;
+  live.current.charW = charW;
   live.current.scale = scale;
   live.current.active = active;
   live.current.modal = !!card || mapOpen || bagOpen;
@@ -158,7 +171,8 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
   // Into the testing room and back: the same teleport, with a paper wipe hiding the change of scene.
   const goRoom = useCallback((enter: boolean) => {
     const L = live.current;
-    if (L.tp || L.room === enter) return;
+    if (L.tp) { L.queued = enter ? 'enter' : 'leave'; return; } // asked for mid-teleport: do it as soon as she has arrived
+    if (L.room === enter) return;
     if (L.tour !== null) { L.tour = null; L.tourWait = false; setTour(null); }
     setMapOpen(false); setBagOpen(false); setCard(null); fromBag.current = false; L.auto = null;
     if (enter) L.returnX = L.x;
@@ -216,7 +230,6 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
   // ---- world loop: walk, camera, proximity ----
   useEffect(() => {
     const L = live.current;
-    const viewport = rootEl.current!.closest('.viewport') as HTMLElement | null;
     const hv0 = L.viewW / 2;
     L.cx = clamp(L.x, hv0, WORLD_W - hv0);
     let raf = 0, last = performance.now(), facingNow: 1 | -1 = 1;
@@ -226,7 +239,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
       const held = L.keys.has('ArrowLeft') || L.keys.has('KeyA') ? -1 : L.keys.has('ArrowRight') || L.keys.has('KeyD') ? 1 : L.hold;
       const hv = L.viewW / 2;
       let dir: -1 | 0 | 1 = L.modal || !L.active || L.tp || L.room ? 0 : held;
-      let run = L.keys.has('ShiftLeft') || L.keys.has('ShiftRight');
+      let run = L.keys.has('ShiftLeft') || L.keys.has('ShiftRight') || (L.hold !== 0 && L.holdRun);
 
       // walking by hand cancels an automatic walk (and the tour); otherwise she walks herself at run speed
       // teleport: turn (100 ms), erase feet to head (350), camera pan or paper wipe (300), redraw head to feet (350)
@@ -251,6 +264,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
         if (done) {
           L.tp = null;
           rootEl.current!.dataset.tpMs = String(Math.round(now - T.start));
+          if (L.queued) { const q = L.queued; L.queued = null; setTimeout(() => goRoom(q === 'enter'), 0); }
           if (T.frame) { L.pointUntil = now + 200; L.openAt = now + 200; L.openId = T.frame; }
           else if (T.point) L.pointUntil = now + 700;
         }
@@ -291,9 +305,13 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
       fgEl.current!.style.transform = `translate3d(${STAGE_W / 2 - L.cx * FOREGROUND_PARALLAX}px,0,0)`;
       // in the room she stands at a fixed spot on screen (the world layer is translated by the camera, so undo that)
       const wx = L.room ? L.cx + ROOM_CHAR_X - STAGE_W / 2 : L.x;
-      charEl.current!.style.transform = `translate3d(${wx - CHAR_W / 2}px,0,0)`;
-      viewport?.style.setProperty('--cam', `${(L.cx - STAGE_W / 2) * L.scale}px`);
-      rootEl.current!.style.setProperty('--pos', String(L.x / WORLD_W));
+      charEl.current!.style.transform = `translate3d(${wx - L.charW / 2}px,0,0)`;
+      // The wall grid repeats every 20 stage px, so only the remainder is applied, as a transform (no repaint).
+      // Per-frame values are written straight to elements: an inherited CSS variable would restyle the whole page every frame.
+      const camLeft = L.cx - STAGE_W / 2;
+      if (gridEl.current) gridEl.current.style.transform = `translateX(${-(((camLeft % 20) + 20) % 20) * L.scale}px)`;
+      const pct = `${(L.x / WORLD_W) * 100}%`;
+      for (const dot of document.querySelectorAll<HTMLElement>('.map-dot')) if (dot.style.left !== pct) dot.style.left = pct;
 
       // what is she standing in front of?
       let t: Target = null;
@@ -336,16 +354,21 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
     prevCard.current = card;
   }, [card]);
 
-  const onHold = (d: -1 | 0 | 1) => { live.current.hold = d; };
+  const onHold = (d: -1 | 0 | 1, run = false) => { live.current.hold = d; live.current.holdRun = d !== 0 && run; };
+  const lookLabels = { frame: 'Look closer', door: 'Back to the café', tour: 'Take the tour', testdoor: 'Test what you learned' } as const;
   const near = target && target.kind !== 'frame' ? target.kind : null;
+  const announce = inRoom ? 'You are in the testing room.' : target?.kind === 'frame' ? `In front of ${FRAMES.find((f) => f.id === target.id)!.drink.name}. Press up arrow or Enter to look closer.` : target ? `${lookLabels[target.kind]}: press up arrow.` : '';
   const miniW = 300;
 
   return (
-    <div ref={rootEl} className={`gallery${entering ? ' g-enter' : ''}`}>
+    <div ref={rootEl} className={`gallery${compact ? ' compact' : ''}${entering ? ' g-enter' : ''}`}>
+      <h1 className="sr-only">Know Your Coffee: a gallery with a coffee on every wall</h1>
+      <p className="sr-only" aria-live="polite">{announce}</p>
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
         <symbol id="frames-art" viewBox="0 0 294 204" dangerouslySetInnerHTML={{ __html: SPRITE }} />
       </svg>
 
+      {vpEl ? createPortal(<div ref={gridEl} className="g-grid" aria-hidden="true" />, vpEl) : null}
       {inRoom ? (
         <TestingRoom
           viewLeft={viewLeft}
@@ -354,25 +377,26 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
           onCheer={bounce}
           onAnswered={() => setVer((v) => v + 1)}
           onLeave={() => goRoom(false)}
+          compact={compact}
         />
       ) : null}
       <div ref={worldEl} className="g-world" style={{ visibility: inRoom ? 'hidden' : undefined }}>
         <World activeId={target?.kind === 'frame' ? target.id : null} near={near} tourAt={tourSaved} onOpen={walkToFrame} onTour={startTour} />
         {/* she stays visible when the rest of the world is hidden for the testing room */}
-        <div ref={charEl} className="g-char" style={{ top: FEET_Y - CHAR_H, width: CHAR_W, height: CHAR_H, visibility: 'visible' }}>
-          <div ref={charInner}><AnimatedCharacter state={cstate} facing={facing} height={CHAR_H} bubble="" /></div>
+        <div ref={charEl} className="g-char" style={{ top: feetY - charH, width: charW, height: charH, visibility: 'visible' }}>
+          <div ref={charInner}><AnimatedCharacter state={cstate} facing={facing} height={charH} bubble="" /></div>
         </div>
       </div>
       <div ref={fgEl} className="g-world g-fg" style={{ visibility: inRoom ? 'hidden' : undefined }}><Foreground /></div>
 
-      <button type="button" className="wordmark g-wordmark" style={{ left: viewLeft + 60 }} onClick={onHome}>know your coffee</button>
-      {!inRoom ? <SearchBox ref={searchRef} onPick={(d) => { const f = FRAMES.find((q) => q.id === d.id)!; goTo(f.x, f); }} /> : null}
-      {!inRoom ? <button type="button" className="g-mini" style={{ left: viewLeft + viewW - 20 - miniW - 24 }} aria-label="Open the map (M)" onClick={() => setMapOpen(true)}>
+      {!compact ? <button type="button" className="wordmark g-wordmark" style={{ left: viewLeft + 60 }} onClick={onHome}>know your coffee</button> : null}
+      {!inRoom && !compact ? <SearchBox ref={searchRef} onPick={(d) => { const f = FRAMES.find((q) => q.id === d.id)!; goTo(f.x, f); }} /> : null}
+      {!inRoom && !compact ? <button type="button" className="g-mini" style={{ left: viewLeft + viewW - 20 - miniW - 24 }} aria-label="Open the map (M)" onClick={() => setMapOpen(true)}>
         <MapStrip width={miniW} boxHeight={14} labelSize={10} />
       </button> : null}
-      {hint && !card && !mapOpen && !inRoom ? <p className="g-hint">use ← → to walk around</p> : null}
+      {hint && !card && !mapOpen && !inRoom ? <p className="g-hint">{compact ? 'hold ← → to walk' : 'use ← → to walk around'}</p> : null}
 
-      {!inRoom ? (
+      {!inRoom && !compact ? (
         <>
           <WalkButton dir={-1} left={viewLeft + 24} onHold={onHold} />
           <WalkButton dir={1} left={viewLeft + viewW - 24 - 56} onHold={onHold} />
@@ -383,22 +407,43 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
       {blur ? <MotionLines key={`b${blur}`} /> : null}
       {paper ? <div key={`p${paper}`} className="g-paper" style={{ '--wipe': reduced() ? '200ms' : '300ms' } as React.CSSProperties} /> : null}
 
-      {mapOpen ? (
-        <div className="g-bigmap" role="dialog" aria-label="Map of the gallery">
-          <h2>map</h2>
-          <p>click a room or a frame and she walks there</p>
-          <MapStrip width={860} boxHeight={72} labelSize={14} onRoom={(r) => goTo(r.enter)} onFrame={walkToFrame} />
-          <button type="button" className="btn-inline" autoFocus onClick={() => setMapOpen(false)}>close</button>
-        </div>
+      {mapOpen ? createPortal(
+        <div className="cc-backdrop" onClick={() => setMapOpen(false)}>
+          <div className="g-bigmap" role="dialog" aria-modal="true" aria-label="Map of the gallery" onClick={(e) => e.stopPropagation()}>
+            <h2>map</h2>
+            <p>{compact ? 'tap a room or a frame and she goes there' : 'click a room or a frame and she goes there'}</p>
+            <MapStrip width={Math.min(860, vw * 0.94 - 70)} boxHeight={compact ? 56 : 72} labelSize={compact ? 12 : 14} onRoom={(r) => goTo(r.enter)} onFrame={walkToFrame} />
+            <button type="button" className="btn-inline" autoFocus onClick={() => setMapOpen(false)}>close</button>
+          </div>
+        </div>,
+        document.body,
       ) : null}
 
-      <BagButton state={bagState} left={viewLeft + 24} onClick={() => setBagOpen(true)} />
+
+      {!compact ? <BagButton state={bagState} left={viewLeft + 24} onClick={() => setBagOpen(true)} /> : null}
+      {compact ? (
+        <PhoneUI
+          ref={searchRef}
+          inRoom={inRoom}
+          bagText={`${bagCount(bagState)} / ${DRINKS.length}`}
+          canLook={!!target}
+          lookLabel={target ? lookLabels[target.kind] : 'Look closer'}
+          onLook={look}
+          onHold={onHold}
+          onHome={onHome}
+          onMap={() => setMapOpen(true)}
+          onBag={() => setBagOpen(true)}
+          onTest={() => goRoom(true)}
+          onPick={(d) => { const f = FRAMES.find((q) => q.id === d.id)!; goTo(f.x, f); }}
+        />
+      ) : null}
       {bagOpen ? (
         <BagPanel
           state={bagState}
           onClose={() => setBagOpen(false)}
           onOpen={(d) => { fromBag.current = true; setBagOpen(false); setCard(d); }}
           onReset={() => { resetProgress(); clearSeenAndTour(); setTourSaved(null); setVer((v) => v + 1); }}
+          compact={compact}
         />
       ) : null}
       {card ? (
@@ -410,6 +455,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
           onNav={(d) => setCard(FRAMES[(frameIndex(card) + d + FRAMES.length) % FRAMES.length].drink)}
           onJump={(id) => { const f = FRAMES.find((q) => q.id === id)!; goTo(f.x, f); }}
           onShow={() => { const f = placeFor(card); goTo(f.x, f, false); }}
+          compact={compact}
         />
       ) : null}
     </div>

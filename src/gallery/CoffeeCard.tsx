@@ -12,12 +12,16 @@ type Props = {
   onNav: (delta: 1 | -1) => void;
   onJump: (id: string) => void;
   onShow: () => void;
+  compact: boolean;
 };
 
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function useFit() {
-  const calc = () => Math.min(1.15, (window.innerHeight * 0.84) / (CARD_H + 64), (window.innerWidth * 0.9) / (CARD_W + 170));
+function useFit(compact: boolean) {
+  // phone: the card takes about 90% of the screen height and the buttons stand beside it
+  const calc = () => compact
+    ? Math.min(1.15, (window.innerHeight * 0.9) / CARD_H, (window.innerWidth * 0.96) / (CARD_W + 450))
+    : Math.min(1.15, (window.innerHeight * 0.84) / (CARD_H + 64), (window.innerWidth * 0.9) / (CARD_W + 170));
   const [s, setS] = useState(calc);
   useEffect(() => {
     const on = () => setS(calc());
@@ -28,9 +32,9 @@ function useFit() {
 }
 
 /** A coffee card, centred over a dimmed wall: flips front to back (click or Space), prev/next along the wall, swipe on touch. */
-export function CoffeeCard({ drink, mastered, tour, onClose, onNav, onJump, onShow }: Props) {
+export function CoffeeCard({ drink, mastered, tour, onClose, onNav, onJump, onShow, compact }: Props) {
   const [flipped, setFlipped] = useState(false);
-  const fit = useFit();
+  const fit = useFit(compact);
   const box = useRef<HTMLDivElement>(null);
   const swipe = useRef<number | null>(null);
   useEffect(() => setFlipped(false), [drink.id]);
@@ -58,8 +62,8 @@ export function CoffeeCard({ drink, mastered, tour, onClose, onNav, onJump, onSh
   return createPortal(
     <div className="cc-backdrop" onClick={onClose}>
       <div
-        className="cc-fit"
-        style={{ transform: `translate(-50%, -50%) scale(${fit})` }}
+        className={`cc-fit${compact ? ' is-compact' : ''}`}
+        style={{ transform: `translate(-50%, -50%) scale(${fit})`, '--fit': fit } as React.CSSProperties}
         ref={box}
         role="dialog"
         aria-modal="true"

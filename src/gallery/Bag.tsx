@@ -24,7 +24,7 @@ export function BagButton({ state, left, onClick }: { state: BagState; left: num
 }
 
 /** All 18 cards in wall order, grouped by category: face-down until she has looked at them, stamped once mastered. */
-export function BagPanel({ state, onOpen, onClose, onReset }: { state: BagState; onOpen: (d: Drink) => void; onClose: () => void; onReset: () => void }) {
+export function BagPanel({ state, onOpen, onClose, onReset, compact }: { state: BagState; onOpen: (d: Drink) => void; onClose: () => void; onReset: () => void; compact: boolean }) {
   const [filter, setFilter] = useState<Filter>('all');
   const [sure, setSure] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -55,7 +55,7 @@ export function BagPanel({ state, onOpen, onClose, onReset }: { state: BagState;
 
   return createPortal(
     <div className="cc-backdrop" onClick={onClose}>
-      <div className="bag-fit" style={{ transform: `translate(-50%, -50%) scale(${fit})` }} ref={box} role="dialog" aria-modal="true" aria-label="Your bag of coffee cards" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+      <div className={`bag-fit${compact ? ' is-compact' : ''}`} style={{ transform: `translate(-50%, -50%) scale(${compact ? 1 : fit})` }} ref={box} role="dialog" aria-modal="true" aria-label="Your bag of coffee cards" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <header>
           <h2>bag</h2>
           <span className="bag-count">{bagCount(state)} / {DRINKS.length} seen · {state.mastered.size} mastered</span>
