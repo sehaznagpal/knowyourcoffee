@@ -443,3 +443,10 @@ body:has(.ph-room) .ph-top-right .ph-icon svg { width: 21px; height: 21px; }
 .ph-back { left: calc(env(safe-area-inset-left) + 8px); }
 .arrow-btn.g-sound.in-room { width: 38px; height: 38px; }
 .arrow-btn.g-sound.in-room svg { width: 21px; height: 21px; }
+
+/* ---- phone landscape: the placard is just the drink's name, and tapping it opens the card ---- */
+@media (orientation: landscape) and (max-height: 500px) {
+  .gallery.compact .placard { width: max-content; margin-left: 100px; translate: -50% 0; pointer-events: auto; cursor: pointer; }
+  .gallery.compact .placard.is-active { translate: -50% -4px; }
+  .gallery.compact .placard span { display: none; }
+}

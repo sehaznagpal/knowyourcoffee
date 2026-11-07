@@ -51,7 +51,7 @@ export function Frame({ f, active, onOpen }: Props) {
         <FrameArt f={f} />
       </div>
 
-      <div className={`placard${active ? ' is-active' : ''}`} style={{ left: f.x - 100, top: f.top + f.h + 14 }} aria-hidden="true">
+      <div className={`placard${active ? ' is-active' : ''}`} style={{ left: f.x - 100, top: f.top + f.h + 14 }} aria-hidden="true" onClick={() => onOpen(f)}>
         <b>{f.drink.name}</b>
         <span>{f.drink.category}</span>
         <span>{recipe}</span>
