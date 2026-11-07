@@ -14,6 +14,7 @@ import { SearchBox, type SearchHandle } from './SearchBox';
 import { TestingRoom } from './Room';
 import { useCompact } from './compact';
 import { PhoneUI } from './PhoneUI';
+import { Walkthrough, walkthroughSeen } from './Walkthrough';
 import { Foreground, World } from './World';
 import {
   CHAR_H, CHAR_W, DEAD_ZONE, DOOR_X, FEET_Y, FOREGROUND_PARALLAX, FRAMES, FRAME_PITCH, PROXIMITY, ROOMS, START_X, STAGE_W, TEST_DOOR_X, TOUR_X,
@@ -105,6 +106,8 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
   const [tour, setTour] = useState<number | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
   const [bagOpen, setBagOpen] = useState(false);
+  const [help, setHelp] = useState(false);
+  const helpFrom = useRef<number | null>(null); // where she was when the walkthrough opened, so she can go back
   const [, setVer] = useState(0);
   const [tourSaved, setTourSaved] = useState<number | null>(getTourAt());
   const fromBag = useRef(false);
@@ -127,7 +130,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
   live.current.charW = charW;
   live.current.scale = scale;
   live.current.active = active;
-  live.current.modal = !!card || mapOpen || bagOpen;
+  live.current.modal = !!card || mapOpen || bagOpen || help;
   live.current.bag = bagOpen; live.current.card = !!card; live.current.mapOpen = mapOpen;
   const bagState: BagState = { seen: new Set(seenIds()), mastered: new Set(loadProgress().built) };
 
@@ -356,6 +359,23 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
     prevCard.current = card;
   }, [card]);
 
+  // the walkthrough opens by itself on the first visit to the lobby, and again whenever "?" is pressed
+  useEffect(() => {
+    if (startInRoom.current || walkthroughSeen()) return;
+    const id = window.setTimeout(() => { helpFrom.current = live.current.x; setHelp(true); }, 1200);
+    return () => clearTimeout(id);
+  }, []);
+  const openHelp = () => { setMapOpen(false); setBagOpen(false); setCard(null); helpFrom.current = live.current.x; setHelp(true); };
+  const closeHelp = () => {
+    setHelp(false);
+    const back = helpFrom.current; helpFrom.current = null;
+    if (back !== null && Math.abs(back - live.current.x) > 40) goTo(back);
+  };
+  const helpStep = (i: number) => {
+    if (i !== 1) return;
+    const on = [...document.querySelectorAll('.gframe')].some((e) => { const r = e.getBoundingClientRect(); return r.left > 60 && r.right < window.innerWidth - 60; });
+    if (!on) goTo(FRAMES[0].x, FRAMES[0], false);
+  };
   const onHold = (d: -1 | 0 | 1, run = false) => { live.current.hold = d; live.current.holdRun = d !== 0 && run; };
   const lookLabels = { frame: 'Look closer', door: 'Back to the café', tour: 'Take the tour', testdoor: 'Test what you learned' } as const;
   const near = target && target.kind !== 'frame' ? target.kind : null;
@@ -388,29 +408,28 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
       <div ref={fgEl} className="g-world g-fg" style={{ visibility: inRoom ? 'hidden' : undefined }}><Foreground /></div>
       {/* she is the top world layer: nothing in the world or the foreground draws over her, only the HUD below */}
       <div ref={topEl} className="g-world g-top">
-        <div ref={charEl} className="g-char" style={{ top: feetY - charH, width: charW, height: charH }}>
+        <div ref={charEl} className="g-char" data-wt="her" style={{ top: feetY - charH, width: charW, height: charH }}>
           <div ref={charInner}><AnimatedCharacter state={cstate} facing={facing} height={charH} bubble="" /></div>
           {hintText && !card && !mapOpen && !inRoom ? <i className="look-hint">{hintText}</i> : null}
         </div>
       </div>
 
       {!inRoom && !compact ? <SearchBox ref={searchRef} style={{ left: viewLeft + 24 }} onPick={(d) => { const f = FRAMES.find((q) => q.id === d.id)!; goTo(f.x, f); }} /> : null}
-      {inRoom && !compact ? <button type="button" className="g-back" style={{ left: viewLeft + 24 }} onClick={() => goRoom(false)}>← back to the gallery</button> : null}
-      {!compact ? (inRoom ? (
-        <div className="g-mini" style={{ left: viewLeft + viewW - 20 - miniW - 24, cursor: 'default' }} aria-hidden="true"><MapStrip width={miniW} boxHeight={14} labelSize={10} /></div>
-      ) : (
-        <button type="button" className="g-mini" style={{ left: viewLeft + viewW - 20 - miniW - 24 }} aria-label="Open the map (M)" onClick={() => setMapOpen(true)}>
+      {inRoom && !compact ? <button type="button" className="g-back" style={{ left: viewLeft + viewW - 24, top: 768, transform: 'translateX(-100%)' }} onClick={() => goRoom(false)}>← back to the gallery</button> : null}
+      {!inRoom && !compact ? (
+        <button type="button" className="g-mini" data-wt="map" style={{ left: viewLeft + viewW - 20 - miniW - 24 }} aria-label="Open the map (M)" onClick={() => setMapOpen(true)}>
           <MapStrip width={miniW} boxHeight={14} labelSize={10} />
         </button>
-      )) : null}
+      ) : null}
       {hint && !card && !mapOpen && !inRoom ? <p className="g-hint">{compact ? 'hold ← → to walk' : 'use ← → to walk around'}</p> : null}
 
       {!inRoom && !compact ? (
         <>
           <WalkButton dir={-1} left={viewLeft + 24} onHold={onHold} />
           <BagButton state={bagState} left={viewLeft + 24} onClick={() => setBagOpen(true)} />
+          <button type="button" className="arrow-btn g-help" data-wt="help" style={{ left: viewLeft + 24 + 56 + 14 }} aria-label="Help: the walkthrough" onClick={openHelp}>?</button>
           <WalkButton dir={1} left={viewLeft + viewW - 24 - 56} onHold={onHold} />
-          <button type="button" className="btn test-btn g-test" onClick={() => goRoom(true)}>test what you learned</button>
+          <button type="button" className="btn test-btn g-test" data-wt="test" onClick={() => goRoom(true)}>test what you learned</button>
         </>
       ) : null}
 
@@ -442,15 +461,17 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
           onBack={() => goRoom(false)}
           onMap={() => setMapOpen(true)}
           onBag={() => setBagOpen(true)}
+          onHelp={openHelp}
           onTest={() => goRoom(true)}
           onPick={(d) => { const f = FRAMES.find((q) => q.id === d.id)!; goTo(f.x, f); }}
         />
       ) : null}
+      {help ? <Walkthrough onClose={closeHelp} onStep={helpStep} /> : null}
       {bagOpen ? (
         <BagPanel
           state={bagState}
           onClose={() => setBagOpen(false)}
-          onOpen={(d) => { fromBag.current = true; setBagOpen(false); setCard(d); }}
+          onShow={(d) => { setBagOpen(false); const f = placeFor(d); goTo(f.x, f, false); }}
           onReset={() => { resetProgress(); clearSeenAndTour(); setTourSaved(null); setVer((v) => v + 1); }}
           compact={compact}
         />

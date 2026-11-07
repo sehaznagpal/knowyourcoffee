@@ -37,3 +37,15 @@ export function clearSeenAndTour() {
   tourAt = null;
   try { localStorage.removeItem(SEEN); localStorage.removeItem(TOUR); } catch { /* ignore */ }
 }
+
+// Cards that have already been opened once. The first time a card is ever opened it flips by itself; never again after that.
+const OPENED = 'know-your-coffee:opened:v1';
+let opened: Set<string> | null = null;
+/** True the first time this card is ever opened (and remembers it). */
+export function firstOpen(id: string): boolean {
+  if (!opened) { try { opened = new Set(JSON.parse(localStorage.getItem(OPENED) ?? '[]')); } catch { opened = new Set(); } }
+  if (opened.has(id)) return false;
+  opened.add(id);
+  try { localStorage.setItem(OPENED, JSON.stringify([...opened])); } catch { /* ignore */ }
+  return true;
+}

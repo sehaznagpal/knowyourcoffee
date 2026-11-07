@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { TestGlass } from '../components/TestGlass';
 import { COLOR, LABEL } from '../data/colors';
 import { DRINKS, type Drink, type Ingredient } from '../data/drinks';
-import { CAPACITY, Deck, SHELF, check, countsOf, displayLayers, feedback, hintText, type Result } from '../logic/quiz';
+import { CAPACITY, Deck, SHELF, check, countsOf, displayLayers, feedback, hintStep, type Result } from '../logic/quiz';
 import { loadProgress, recordAnswer, type Progress } from '../logic/storage';
 import { CARD_H, CARD_W, CardFront } from './CardFace';
 import { Art, closed } from './props';
@@ -13,7 +13,7 @@ import { FLOOR_Y } from './layout';
 
 export const COUNTER_TOP = 590;
 const GLASS_W = 219, GLASS_H = 306;
-const SHELF_X = 236, PITCH = 118; // the shelf sits clear of the back button (left) and the mini-map (right)
+const SHELF_X = 300, PITCH = 118; // the shelf is centred on the screen: its 712 px board runs from 284 to 996
 const ROW_TOP = [50, 160];
 const INK = '#1e1e1e', PAPER = '#f7f5f1';
 
@@ -58,7 +58,7 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
   const [drink, setDrink] = useState<Drink | null>(null);
   const [pours, setPours] = useState<Ingredient[]>([]);
   const [result, setResult] = useState<Result | null>(null);
-  const [hint, setHint] = useState(false);
+  const [hint, setHint] = useState<0 | 1 | 2>(0); // taps on hint: 1 = the kind of drink, 2 = and how many ingredients
   const [pour, setPour] = useState<{ ing: Ingredient; n: number } | null>(null);
   const [fly, setFly] = useState<Drink | null>(null);
   const flyEl = useRef<HTMLDivElement>(null);
@@ -74,7 +74,7 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
     deck.current = new Deck(Math.random, pool);
     const empty = pool !== undefined && pool.length === 0;
     setDrink(empty ? null : deck.current.next());
-    setPours([]); setResult(null); setHint(false); setPour(null);
+    setPours([]); setResult(null); setHint(0); setPour(null);
     onMood('order');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool]);
@@ -102,7 +102,7 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
 
   const next = () => {
     const d = deck.current!.next();
-    setDrink(d); setPours([]); setResult(null); setHint(false); setPour(null);
+    setDrink(d); setPours([]); setResult(null); setHint(0); setPour(null);
     onMood('order');
   };
 
@@ -153,7 +153,7 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
         <div className="room-bubble" aria-live="polite">
           <span>make me a</span>
           <b>{drink.name.toLowerCase()}</b>
-          {hint ? <small>{hintText(drink)}</small> : null}
+          {hint ? <small>{hintStep(drink, hint)}</small> : null}
         </div>
       ) : null}
       {empty ? (
@@ -173,7 +173,7 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
       <div className="counter-buttons">
         <button type="button" className="btn-inline" disabled={dis || !pours.length} onClick={() => setPours((p) => p.slice(0, -1))}>undo</button>
         <button type="button" className="btn-inline" disabled={dis || !pours.length} onClick={() => setPours([])}>clear</button>
-        <button type="button" className="btn-inline" disabled={dis} onClick={() => setHint(true)}>hint</button>
+        <button type="button" className="btn-inline" disabled={dis || hint === 2} onClick={() => setHint((h) => (h === 0 ? 1 : 2))}>hint</button>
         <button type="button" className="btn-primary" disabled={dis || !pours.length} onClick={serve}>SERVE IT</button>
       </div>
   );

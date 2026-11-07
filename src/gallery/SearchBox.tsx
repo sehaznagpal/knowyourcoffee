@@ -22,7 +22,7 @@ export const SearchBox = forwardRef<SearchHandle, { onPick: (d: Drink) => void; 
   const pick = (d: Drink) => { setQ(''); setOpen(false); input.current?.blur(); onPick(d); };
 
   return (
-    <div className={`g-search${className ? ' ' + className : ''}`} style={style} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}>
+    <div className={`g-search${className ? ' ' + className : ''}`} style={style} data-wt={className ? undefined : 'search'} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}>
       <input
         ref={input}
         type="text"

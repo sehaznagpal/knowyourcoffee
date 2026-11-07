@@ -71,8 +71,13 @@ export function feedback(drink: Drink, r: Result): string {
   return parts.join(' ');
 }
 
+const KIND: Record<Drink['category'], string> = { shots: 'a shot', 'with water': 'made with water', 'with drip': 'made with drip', 'with milk': "it's a milk drink", 'cold & sweet': 'a cold & sweet one' };
 export const hintText = (drink: Drink) =>
-  `Hint: ${SHELF_ORDER.filter((i) => drink.layers.some((l) => l.ing === i)).map((i) => LABEL[i]).join(', ')}.`;
+  `Hint: ${SHELF_ORDER.filter((i) => drink.layers.some((l) => l.ing === i)).map((i) => LABEL[i]).join(', ')}.`; // the old table's test
+
+/** The testing room's hint comes in two steps and never names an ingredient: first the kind of drink, then how many ingredients it has. */
+export const hintStep = (drink: Drink, level: 1 | 2) =>
+  level === 1 ? KIND[drink.category] : `${KIND[drink.category]} · ${drink.layers.length} ingredient${drink.layers.length === 1 ? '' : 's'}`;
 
 /** Random order with no repeats until all drinks were asked; a wrong answer returns 3 to 5 questions later. */
 export class Deck {

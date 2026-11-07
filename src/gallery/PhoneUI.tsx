@@ -13,6 +13,7 @@ type Props = {
   onBack: () => void;
   onMap: () => void;
   onBag: () => void;
+  onHelp: () => void;
   onTest: () => void;
   onPick: (d: Drink) => void;
 };
@@ -44,18 +45,19 @@ export const PhoneUI = forwardRef<SearchHandle, Props>(function PhoneUI(p, ref) 
         <div className="ph-top-right">
           {!p.inRoom ? (
             <>
-              <button type="button" className="ph-icon" aria-label="Find a coffee" aria-expanded={searching} onClick={() => setSearching((s) => !s)}>
+              <button type="button" className="ph-icon" data-wt="search" aria-label="Find a coffee" aria-expanded={searching} onClick={() => setSearching((s) => !s)}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="6.5" stroke="#1e1e1e" strokeWidth="3" /><path d="m15 15 6 6" stroke="#1e1e1e" strokeWidth="3" strokeLinecap="round" /></svg>
               </button>
-              <button type="button" className="ph-icon" aria-label="Open the map" onClick={p.onMap}>
+              <button type="button" className="ph-icon" data-wt="map" aria-label="Open the map" onClick={p.onMap}>
                 <svg width="26" height="22" viewBox="0 0 26 22" fill="none" aria-hidden="true"><rect x="2" y="5" width="22" height="12" rx="2" stroke="#1e1e1e" strokeWidth="3" /><path d="M9 5v12M16 5v12" stroke="#1e1e1e" strokeWidth="2.5" /></svg>
               </button>
             </>
           ) : null}
-          <button type="button" className="ph-icon ph-bag" aria-label={`Open the bag: ${p.bagText}`} onClick={p.onBag}>
+          <button type="button" className="ph-icon ph-bag" data-wt="bag" aria-label={`Open the bag: ${p.bagText}`} onClick={p.onBag}>
             <svg width="26" height="26" viewBox="0 0 30 28" fill="none" aria-hidden="true"><path d="M9 10C9 3 21 3 21 10" stroke="#1e1e1e" strokeWidth="3" strokeLinecap="round" /><path d="M3 10h24l2 15H1Z" fill="#1e1e1e" stroke="#1e1e1e" strokeWidth="3" strokeLinejoin="round" /></svg>
           </button>
-          {!p.inRoom ? <button type="button" className="ph-test" onClick={p.onTest}>test</button> : null}
+          {!p.inRoom ? <button type="button" className="ph-icon ph-help" data-wt="help" aria-label="Help: the walkthrough" onClick={p.onHelp}>?</button> : null}
+          {!p.inRoom ? <button type="button" className="ph-test" data-wt="test" onClick={p.onTest}>test</button> : null}
         </div>
       </div>
       {searching && !p.inRoom ? (

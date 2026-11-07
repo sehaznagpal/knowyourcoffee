@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Drink } from '../data/drinks';
 import { CARD_H, CARD_W, CardBack, CardFront, cardLabel } from './CardFace';
+import { firstOpen } from './saved';
 
 type Tour = { i: number; total: number; onNext: () => void; onEnd: () => void };
 type Props = {
@@ -38,13 +39,22 @@ export function CoffeeCard({ drink, mastered, tour, onClose, onNav, onJump, onSh
   const box = useRef<HTMLDivElement>(null);
   const swipe = useRef<number | null>(null);
   useEffect(() => setFlipped(false), [drink.id]);
+  // the first time a card is ever opened it flips by itself after 4 s, unless it has been flipped already
+  const userFlipped = useRef(false);
+  useEffect(() => {
+    userFlipped.current = false;
+    if (!firstOpen(drink.id)) return;
+    const t = window.setTimeout(() => { if (!userFlipped.current) setFlipped(true); }, 4000);
+    return () => clearTimeout(t);
+  }, [drink.id]);
+  const flip = () => { userFlipped.current = true; setFlipped((f) => !f); };
 
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
     box.current?.focus();
     const key = (e: KeyboardEvent) => {
       const onButton = !!(e.target as Element).closest?.('button');
-      if (e.code === 'Space' && !onButton) { e.preventDefault(); setFlipped((f) => !f); }
+      if (e.code === 'Space' && !onButton) { e.preventDefault(); flip(); }
       else if (e.key === 'ArrowRight' && !tour) { e.preventDefault(); onNav(1); }
       else if (e.key === 'ArrowLeft' && !tour) { e.preventDefault(); onNav(-1); }
       else if (e.key === 'Tab' && box.current) {
@@ -85,7 +95,7 @@ export function CoffeeCard({ drink, mastered, tour, onClose, onNav, onJump, onSh
         <div
           className={`cc${flipped ? ' is-flipped' : ''}`}
           style={{ width: CARD_W, height: CARD_H }}
-          onClick={(e) => { if (!(e.target as Element).closest('button')) setFlipped((f) => !f); }}
+          onClick={(e) => { if (!(e.target as Element).closest('button')) flip(); }}
           onPointerDown={(e) => { if (e.pointerType === 'touch') swipe.current = e.clientX; }}
           onPointerUp={(e) => {
             if (swipe.current === null || tour) return;
@@ -101,7 +111,7 @@ export function CoffeeCard({ drink, mastered, tour, onClose, onNav, onJump, onSh
         </div>
 
         <div className="cc-bar">
-          <button type="button" className="btn-primary cc-flipbtn" onClick={() => setFlipped((f) => !f)}>{flipped ? 'front' : 'flip'}</button>
+          <button type="button" className="btn-primary cc-flipbtn" onClick={flip}>{flipped ? 'front' : 'flip'}</button>
           {tour ? (
             <>
               {tour.i + 1 < tour.total ? <button type="button" className="btn-inline" onClick={tour.onNext}>next stop</button> : null}
