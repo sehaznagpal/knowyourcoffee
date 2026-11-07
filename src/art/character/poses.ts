@@ -16,7 +16,7 @@ export type Pose = {
 
 export const IDLE: Pose = {
   legL: { a: 1.5 }, legR: { a: -1.5 },
-  armL: { a1: 99, a2: 98 }, armR: { a1: 79, a2: 84 },
+  armL: { a1: 98.35, a2: 98.35 }, armR: { a1: 82.25, a2: 82.25 },
   lean: -1, shiftX: 5, tilt: 2, flareR: 16, handR: 'mitten',
 };
 const P = (o: Partial<Pose>): Pose => ({ ...IDLE, ...o });
@@ -31,21 +31,24 @@ export const POSES = {
   turn: P({ legL: { a: 3 }, legR: { a: -3 }, shiftX: 0, lean: 0, tilt: 0 }),
 };
 
+// Arms swing against the leg on the same side: about 8 degrees in the walk, 12 in the run; the bag arm only 4. They hang relaxed.
+const AR = 82.25, AL = 98.35; // the arms at rest (absolute angles; bigger = further back)
+const swing = (rest: number, d: number) => ({ a1: rest + d, a2: rest + d });
 const W = (o: Partial<Pose>) => P({ lean: 2, shiftX: 0, tilt: 0, ...o });
-// contact, passing, contact, passing: legs and arms in opposition
+// contact, passing, contact, passing
 export const WALK: Pose[] = [
-  W({ legL: { a: 17 }, legR: { a: -17 }, armL: { a1: 110, a2: 106 }, armR: { a1: 60, a2: 42 } }),
-  W({ legL: { a: 0 }, legR: { a: -7, lift: 20 }, armL: { a1: 100, a2: 94 }, armR: { a1: 80, a2: 76 } }),
-  W({ legL: { a: -17 }, legR: { a: 17 }, armL: { a1: 84, a2: 56 }, armR: { a1: 97, a2: 102 } }),
-  W({ legL: { a: -7, lift: 20 }, legR: { a: 0 }, armL: { a1: 90, a2: 84 }, armR: { a1: 80, a2: 78 } }),
+  W({ legL: { a: 17 }, legR: { a: -17 }, armL: swing(AL, 4), armR: swing(AR, -8) }),
+  W({ legL: { a: 0 }, legR: { a: -7, lift: 20 }, armL: swing(AL, 0), armR: swing(AR, 0) }),
+  W({ legL: { a: -17 }, legR: { a: 17 }, armL: swing(AL, -4), armR: swing(AR, 8) }),
+  W({ legL: { a: -7, lift: 20 }, legR: { a: 0 }, armL: swing(AL, 0), armR: swing(AR, 0) }),
 ];
 
 const R = (o: Partial<Pose>) => P({ lean: 9, shiftX: 4, tilt: -2, ...o });
 export const RUN: Pose[] = [
-  R({ legL: { a: 28 }, legR: { a: -36, lift: 30 }, armL: { a1: 114, a2: 112 }, armR: { a1: 58, a2: -46 } }),
-  R({ legL: { a: 5 }, legR: { a: 30, lift: 48 }, armL: { a1: 102, a2: 84 }, armR: { a1: 76, a2: 22 } }),
-  R({ legR: { a: 28 }, legL: { a: -36, lift: 30 }, armR: { a1: 102, a2: 104 }, armL: { a1: 72, a2: -42 } }),
-  R({ legR: { a: 5 }, legL: { a: 30, lift: 48 }, armR: { a1: 86, a2: 70 }, armL: { a1: 92, a2: 64 } }),
+  R({ legL: { a: 28 }, legR: { a: -36, lift: 30 }, armL: swing(AL, 4), armR: swing(AR, -12) }),
+  R({ legL: { a: 5 }, legR: { a: 30, lift: 48 }, armL: swing(AL, 0), armR: swing(AR, 0) }),
+  R({ legR: { a: 28 }, legL: { a: -36, lift: 30 }, armR: swing(AR, 12), armL: swing(AL, -4) }),
+  R({ legR: { a: 5 }, legL: { a: 30, lift: 48 }, armR: swing(AR, 0), armL: swing(AL, 0) }),
 ];
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;

@@ -28,20 +28,20 @@ export const NECK_Y = 185;
 export const SPLIT = { top: [165.97, 400] as Pt, bottom: [139.7, 700] as Pt };
 
 // ---- arms ----
-// Left (the bag arm): the sleeve is drawn where it hangs in the Figma file and rotates about the shoulder, which sits under the jacket.
+// Both arms are one oversized jacket sleeve in a local frame: shoulder at the origin, hanging along +y, a little narrower at the shoulder
+// and wider at the cuff, with a slight bend at the elbow. The group pivots at the shoulder, which is tucked under the jacket.
 export const SHOULDER_L: Pt = [100, 226];
-export const L_IDLE = 98.35; // the pose angle at which the arm hangs as drawn
-export const TUBE_L = 'M96 226C82 262 62 312 56 348L51.8 475.7C51.6 480.3 55.2 484 59.8 484H100.2C104.5 484 108.1 480.5 108.2 476.2C108.7 449.9 110.4 365.4 108 356.2C105.2 345.4 103 329.4 102 320.4C99 293.7 97.5 262 97.5 262L112 226Z';
-export const HAND_L = { cx: 80.5, cy: 478.5, rx: 17.5, ry: 29.5 };
-export const GRIP_L: Pt = [79.5, 491]; // top of the bag handle
-export const CUFF_L = { x: 52, y: 416.947, w: 57, h: 67.0531, r: 8 };
-
-// Right (the free arm): a tube in its own frame, shoulder at the origin, hanging along +y. Hidden under the jacket at rest.
 export const SHOULDER_R: Pt = [212, 226];
-export const R_IDLE = 82.25; // pose angle of the free arm at rest
-export const ARM_R_LEN = 214;
-export const TUBE_R = 'M-24 0L-22 150L-25 206Q-25 214 -17 214L17 214Q25 214 25 206L22 150L24 0A24 24 0 0 0 -24 0Z';
-export const SEAM_R = 'M-12 60C-11 110 -11 160 -12 206';
+export const L_IDLE = 98.35; // pose angle at which the bag arm hangs at its drawn tilt
+export const L_TILT = 4.4; // degrees the bag arm hangs from vertical at idle
+export const ARM_LEN = 258; // shoulder to the bottom of the cuff
+export const SLEEVE = 'M-20 0C-20 60 -20 100 -20 135C-22 175 -28 215 -31 238L-31 250Q-31 258 -23 258L23 258Q31 258 31 250L31 238C27 215 28 175 28 135C28 100 24 60 20 0A20 20 0 0 0 -20 0Z';
+export const CUFF = 'M-31 238Q0 246 31 238'; // the visible edge of the cuff
+export const CUFF_BAND = 'M-31 238Q0 246 31 238L31 250Q31 258 23 258L-23 258Q-31 258 -31 250Z';
+export const HAND_Y = 240; // top of the palm, under the cuff
+export const PALM = 'M-16 0L16 0C20 20 20 44 14 58C9 68 -9 68 -14 58C-20 44 -20 20 -16 0Z'; // a soft mitten, 20% bigger than before
+export const THUMB = 'M14 14C26 12 31 28 25 40C21 44 16 40 15 34Z';
+export const GRIP_LOCAL: Pt = [0, 292]; // where the bag handle meets the bag hand, in the arm's frame
 
 const rad = (d: number) => (d * Math.PI) / 180;
 /** Rotate a point about a pivot (screen degrees, clockwise positive). */

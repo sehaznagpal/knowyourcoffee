@@ -1,8 +1,8 @@
 import { createContext, memo, useContext, useEffect, useRef, useState, type CSSProperties } from 'react';
 import './character.css';
 import {
-  ANKLE, BEIGE, BLUE, BLUSH, CHAR_H, CHAR_W, CUFF_L, CX, GRIP_L, GROUND, HAND_L, HIP, HIP_Y, INK, JACKET, LEG_LEN, LILAC, L_IDLE, NECK_Y, PAPER, R_IDLE,
-  ARM_R_LEN, SEAM_R, SHAPES as S, SHOE, SHOULDER_L, SHOULDER_R, SPLIT, TROUSER, TUBE_L, TUBE_R, handPath, rotAbout, type HandKind,
+  ANKLE, ARM_LEN, BEIGE, BLUE, BLUSH, CHAR_H, CHAR_W, CUFF, CUFF_BAND, CX, GRIP_LOCAL, GROUND, HAND_Y, HIP, HIP_Y, INK, JACKET, LEG_LEN, LILAC, L_IDLE, L_TILT, NECK_Y, PALM,
+  PAPER, SHAPES as S, SHOE, SHOULDER_L, SHOULDER_R, SLEEVE, SPLIT, THUMB, TROUSER, handPath, rotAbout, type HandKind,
 } from './geometry';
 import * as V from './v2shapes';
 import { IDLE, POSES, RUN, WALK, cyclePose, lerpPose, type Pose } from './poses';
@@ -109,7 +109,7 @@ const JacketR = memo(function JacketR() {
   return (
     <g id="jacket-right" style={k(0.5)}>
       <O d={V.JACKETR} fill={JACKET} />
-      <Inside><path className="o" pathLength={1} d={V.POCKET} fill={BLUE} /><path className="o" pathLength={1} d={V.SEAMR} fill={INK} /></Inside>
+      <Inside><path className="o" pathLength={1} d={V.POCKET} fill={BLUE} /></Inside>
     </g>
   );
 });
@@ -130,51 +130,54 @@ const JacketL = memo(function JacketL() {
   return <g id="jacket-left" style={k(0.5)}><O d={V.JACKETL} fill={JACKET} /></g>;
 });
 
+// One sleeve with its cuff: narrower at the shoulder, wider at the cuff, a slight elbow bend, a visible cuff edge. No lines down the sleeve.
+const Sleeve = () => (
+  <>
+    <O d={SLEEVE} fill={JACKET} />
+    <O d={CUFF_BAND} fill="#434343" />
+    <Inside><path className="o" pathLength={1} d={CUFF} fill="none" stroke="#2c2c2c" strokeWidth={3} strokeLinecap="round" /></Inside>
+  </>
+);
+// A soft mitten with a small thumb, white like the face, coming out of the cuff
+const Mitten = () => (
+  <g transform={`translate(0 ${HAND_Y})`}>
+    <O d={THUMB} fill={PAPER} />
+    <O d={PALM} fill={PAPER} />
+  </g>
+);
+
 // Free arm (screen right): sleeve and hand pivot at the shoulder, which hides under the jacket.
 const FreeArm = memo(function FreeArm({ angle, flip, hand }: { angle: number; flip: boolean; hand: HandKind }) {
   return (
     <g id="arm-right" transform={`translate(${SHOULDER_R[0]} ${SHOULDER_R[1]}) rotate(${angle - 90})`} style={k(0.55)}>
-      {hand === 'mitten' ? (
-        <>
-          <ellipse className="o" cx={0} cy={ARM_R_LEN + 14} rx={13} ry={21} fill="none" stroke={INK} strokeWidth={8} />
-          <ellipse className="o" cx={0} cy={ARM_R_LEN + 14} rx={13} ry={21} fill={PAPER} />
-        </>
-      ) : (
-        <g transform={`translate(0 ${ARM_R_LEN - 6}) rotate(90) translate(-6 0) scale(1 ${flip ? -1 : 1})`}>
-          <O d={handPath(hand)} stroke={INK} w={8} deco />
+      {hand === 'mitten' ? <Mitten /> : (
+        <g transform={`translate(0 ${HAND_Y + 8}) rotate(90) translate(-6 0) scale(1 ${flip ? -1 : 1})`}>
           <O d={handPath(hand)} fill={PAPER} />
         </g>
       )}
-      <O d={TUBE_R} stroke={PAPER} w={8} deco />
-      <O d={TUBE_R} fill={JACKET} />
-      <Inside><path className="o" pathLength={1} d={SEAM_R} fill="none" stroke={INK} strokeWidth={4} strokeLinecap="round" /></Inside>
+      <Sleeve />
     </g>
   );
 });
 
-// Bag arm (screen left): the sleeve is the tube from the Figma file; the hand sits under the cuff and the bag hangs from it.
-const BagSleeve = memo(function BagSleeve({ theta }: { theta: number }) {
+// Bag arm (screen left): the bag hangs from the hand, on a handle that runs to both ends of the bag.
+const BagHand = memo(function BagHand({ rot }: { rot: number }) {
   return (
-    <g id="arm-left" transform={`rotate(${theta} ${SHOULDER_L[0]} ${SHOULDER_L[1]})`} style={k(0.3)}>
-      <O d={TUBE_L} stroke={PAPER} w={8} deco />
-      <O d={TUBE_L} fill={JACKET} />
-      <rect className="o" x={CUFF_L.x} y={CUFF_L.y} width={CUFF_L.w} height={CUFF_L.h} rx={CUFF_L.r} fill={JACKET} />
-      <Inside><O d={V.SEAML} stroke={INK} w={4} /></Inside>
-    </g>
+    <g id="hand" transform={`translate(${SHOULDER_L[0]} ${SHOULDER_L[1]}) rotate(${rot})`} style={k(0.3)}><Mitten /></g>
   );
 });
-const BagHand = memo(function BagHand({ theta }: { theta: number }) {
+const BagSleeve = memo(function BagSleeve({ rot }: { rot: number }) {
   return (
-    <g id="hand" transform={`rotate(${theta} ${SHOULDER_L[0]} ${SHOULDER_L[1]})`} style={k(0.3)}>
-      <ellipse className="o" cx={HAND_L.cx} cy={HAND_L.cy} rx={HAND_L.rx} ry={HAND_L.ry} fill="none" stroke={INK} strokeWidth={8} />
-      <ellipse className="o" cx={HAND_L.cx} cy={HAND_L.cy} rx={HAND_L.rx} ry={HAND_L.ry} fill={PAPER} />
-    </g>
+    <g id="arm-left" transform={`translate(${SHOULDER_L[0]} ${SHOULDER_L[1]}) rotate(${rot})`} style={k(0.3)}><Sleeve /></g>
   );
 });
+// The handle: a lilac stroke with its own beige outline (the figure's edge ring sits under the trousers, so it is drawn here too).
+const HANDLE = 'M40 537Q58 505 79.5 491Q101 505 119 538';
 const Bag = memo(function Bag({ transform }: { transform: string }) {
   return (
     <g id="bag" transform={transform} style={k(0.3)}>
-      <O d={V.BAGHANDLE} stroke={PAPER} w={8} />
+      <O d={HANDLE} stroke={BEIGE} w={22} deco />
+      <O d={HANDLE} stroke={LILAC} w={8} />
       <O d={V.BAG} fill={LILAC} />
       <Inside>
         {[['M38.26 557.23L45.77 617.26'], ['M46.05 546.95L122.05 545.05'], ['M19.3 573.64L33.36 571.3']].map(([d]) => (
@@ -219,6 +222,7 @@ type Props = {
   bubble?: string | null; // speech bubble text
   viewBox?: string; // crop, for close-ups (default: the whole figure)
   edgePx?: number; // width of the beige sticker edge in screen px (needs a numeric height)
+  bagLag?: number; // the bag arm's rotation a moment ago, so the bag trails it
   bunDy?: number; // the hair's follow-through behind the body bob, in character units
   height?: number | string;
   className?: string;
@@ -236,7 +240,7 @@ export function hipYOf(pose: Pose) {
 const armAngle = (a: { a1: number; a2: number }) => 0.35 * a.a1 + 0.65 * a.a2;
 
 /** One still of Sehaz, rigged from the Figma v2 file. Named groups: hair-back, head, face, shirt, belt, jacket-left, jacket-right, arm-left, arm-right, hand, bag, leg-left, leg-right. */
-export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edgePx = 3, bunDy = 0, viewBox, height = 360, className }: Props) {
+export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edgePx = 3, bunDy = 0, bagLag, viewBox, height = 360, className }: Props) {
   const t = Math.abs(turn);
   const sign = turn < 0 ? -1 : 1;
   const sx = sign * (0.88 + 0.12 * t);
@@ -257,11 +261,13 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
 
   // Arms: absolute angles (0 = right, 90 = down) become one rotation about the shoulder
   const aR = armAngle(pose.armR), aL = armAngle(pose.armL);
-  const thetaL = Math.round(Math.max(-40, Math.min(40, aL - L_IDLE)) * 10) / 10; // the bag arm only swings a little, so the bag stays in its hand
+  const rotL = Math.round((Math.max(-40, Math.min(40, aL - L_IDLE)) + L_TILT) * 10) / 10; // the bag arm hangs at its drawn tilt
   const handFlipR = Math.sin(rad(aR)) > 0.4;
-  const grip = rotAbout(GRIP_L, SHOULDER_L, thetaL);
-  const bagAngle = Math.round(Math.max(-35, Math.min(35, -0.45 * thetaL)) * 10) / 10;
-  const bagT = `translate(${grip[0].toFixed(1)} ${grip[1].toFixed(1)}) rotate(${bagAngle}) translate(${-GRIP_L[0]} ${-GRIP_L[1]})`;
+  // The bag hangs from the hand and lags a little behind the arm (bagLag is the arm's rotation a moment ago)
+  const lag = bagLag ?? rotL;
+  const grip = rotAbout([SHOULDER_L[0] + GRIP_LOCAL[0], SHOULDER_L[1] + GRIP_LOCAL[1]], SHOULDER_L, rotL);
+  const bagAngle = Math.round(Math.max(-35, Math.min(35, -0.8 * (lag - L_TILT) + 0.3 * (rotL - lag))) * 10) / 10;
+  const bagT = `translate(${grip[0].toFixed(1)} ${grip[1].toFixed(1)}) rotate(${bagAngle}) translate(-79.5 -491)`;
 
   // The viewBox has room all round for every pose (arm raised, bubble), and negative margins keep the layout size at the figure's own box,
   // so nothing is ever cut off at the figure's edge.
@@ -283,9 +289,9 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
           <JacketR />
           <JacketL />
           <Bag transform={bagT} />
-          <BagHand theta={thetaL} />
+          <BagHand rot={rotL} />
           <FreeArm angle={Math.round(aR * 10) / 10} flip={handFlipR} hand={pose.handR} />
-          <BagSleeve theta={thetaL} />
+          <BagSleeve rot={rotL} />
           <ShoulderCaps />
           <Head tilt={tilt} turn={Math.round(t * 50) / 50} />
         </g>
@@ -322,17 +328,17 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
 const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TELEPORT_MS = 330;
 
-type Frame = { pose: Pose; turn: number; erase: number; opacity: number; bunDy: number };
+type Frame = { pose: Pose; turn: number; erase: number; opacity: number; bunDy: number; bagLag: number };
 const near = (a: number, b: number) => Math.abs(a - b) < 0.02;
 const same = (a: Frame | null, b: Frame) =>
-  !!a && near(a.turn, b.turn) && near(a.erase, b.erase) && near(a.opacity, b.opacity) && near(a.bunDy, b.bunDy) &&
+  !!a && near(a.turn, b.turn) && near(a.erase, b.erase) && near(a.opacity, b.opacity) && near(a.bunDy, b.bunDy) && near(a.bagLag, b.bagLag) &&
   near(a.pose.legL.a, b.pose.legL.a) && near(a.pose.legR.a, b.pose.legR.a) && near(a.pose.legL.lift ?? 0, b.pose.legL.lift ?? 0) && near(a.pose.legR.lift ?? 0, b.pose.legR.lift ?? 0) &&
   near(a.pose.armL.a1, b.pose.armL.a1) && near(a.pose.armL.a2, b.pose.armL.a2) && near(a.pose.armR.a1, b.pose.armR.a1) && near(a.pose.armR.a2, b.pose.armR.a2) &&
   near(a.pose.lean, b.pose.lean) && near(a.pose.shiftX, b.pose.shiftX) && near(a.pose.tilt, b.pose.tilt) && near(a.pose.flareR, b.pose.flareR) && a.pose.handR === b.pose.handR;
 
 export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
-  const [frame, setFrame] = useState({ pose: IDLE, turn: facing as number, erase: state === 'teleport-in' ? 1 : 0, opacity: 1, bunDy: 0 });
-  const live = useRef({ pose: IDLE, turn: facing as number, state, facing, since: performance.now(), dy: 0, bun: 0 });
+  const [frame, setFrame] = useState({ pose: IDLE, turn: facing as number, erase: state === 'teleport-in' ? 1 : 0, opacity: 1, bunDy: 0, bagLag: 4.4 });
+  const live = useRef({ pose: IDLE, turn: facing as number, state, facing, since: performance.now(), dy: 0, bun: 0, lag: 4.4 });
   const prevState = useRef(state);
 
   if (prevState.current !== state) {
@@ -372,7 +378,10 @@ export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
       if (L.state === 'teleport-out') { erase = Math.min(1, (age * 1000) / TELEPORT_MS); }
       if (L.state === 'teleport-in') { erase = Math.max(0, 1 - (age * 1000) / TELEPORT_MS); }
       if (reduced() && L.state.startsWith('teleport')) { opacity = L.state === 'teleport-out' ? Math.max(0, 1 - age / 0.2) : Math.min(1, age / 0.2); erase = 0; }
-      const next = { pose: L.pose, turn: L.turn, erase, opacity, bunDy: reduced() ? 0 : L.bun };
+      // the bag trails the arm by about 0.1 s
+      const rotNow = Math.max(-40, Math.min(40, 0.35 * L.pose.armL.a1 + 0.65 * L.pose.armL.a2 - L_IDLE)) + L_TILT;
+      L.lag += (rotNow - L.lag) * Math.min(1, dt / 0.1);
+      const next = { pose: L.pose, turn: L.turn, erase, opacity, bunDy: reduced() ? 0 : L.bun, bagLag: Math.round(L.lag * 10) / 10 };
       if (!same(sent, next)) { sent = next; setFrame(next); } // resting poses do not re-render at all
       raf = requestAnimationFrame(loop);
     };
@@ -387,7 +396,7 @@ export function AnimatedCharacter({ state = 'idle', facing = 1, bubble, height, 
   const m = useCharacterMotion(state, facing);
   return (
     <div style={{ opacity: m.opacity, display: 'inline-block', lineHeight: 0 }}>
-      <Character pose={m.pose} turn={m.turn} erase={m.erase} bunDy={m.bunDy} bubble={state === 'order' ? (bubble ?? 'make me a ___') : null} height={height} className={className} />
+      <Character pose={m.pose} turn={m.turn} erase={m.erase} bunDy={m.bunDy} bagLag={m.bagLag} bubble={state === 'order' ? (bubble ?? 'make me a ___') : null} height={height} className={className} />
     </div>
   );
 }
