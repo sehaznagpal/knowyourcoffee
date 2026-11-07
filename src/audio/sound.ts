@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 
 const KEY = 'kyc-sound';
 const MUSIC_URL = `${import.meta.env.BASE_URL}audio/background.mp3`;
-const GAIN = { normal: 0.15, duck: 0.08 };
+const GAIN = { normal: 0.08, duck: 0.05 };
 const FADE_IN = 3, FADE_OUT = 1, XFADE = 2;
 
 let ctx: AudioContext | null = null;
