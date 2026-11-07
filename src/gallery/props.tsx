@@ -5,11 +5,11 @@ import { WORLD_W, FLOOR_Y, rng } from './layout';
 const INK = '#1e1e1e', PAPER = '#f7f5f1', BEIGE = '#f4f0e4';
 type Shape = { d: string; fill?: string; stroke?: string; w?: number };
 
-const closed = (pts: Pt[], seed: number, step = 20) => sketch(pts, { seed, jitter: 0.8, step });
-const open = (pts: Pt[], seed: number, step = 30) => sketch(pts, { closed: false, seed, jitter: 0.6, step });
+export const closed = (pts: Pt[], seed: number, step = 20) => sketch(pts, { seed, jitter: 0.8, step });
+export const open = (pts: Pt[], seed: number, step = 30) => sketch(pts, { closed: false, seed, jitter: 0.6, step });
 
 /** Props are drawn like Sehaz: solid shapes with an outline and a 3px beige sticker edge, so black pieces still read on the black wall. */
-function Art({ width, height, shapes, style, className }: { width: number; height: number; shapes: Shape[]; style?: CSSProperties; className?: string }) {
+export function Art({ width, height, shapes, style, className }: { width: number; height: number; shapes: Shape[]; style?: CSSProperties; className?: string }) {
   const E = 3;
   return (
     <svg className={className} width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible', display: 'block', ...style }} aria-hidden="true">

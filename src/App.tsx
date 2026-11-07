@@ -35,7 +35,7 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>(params.get('screen') === 'table' || params.get('screen') === 'gallery' || params.get('test') === '1' ? 'table' : 'landing');
   const [entering, setEntering] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
-  const [isTestOpen, setIsTestOpen] = useState(params.get('test') === '1');
+  const [isTestOpen, setIsTestOpen] = useState(params.get('test') === '1' && world === 'table'); // in the gallery, ?test=1 starts inside the testing room
   const scale = useStageScale();
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);

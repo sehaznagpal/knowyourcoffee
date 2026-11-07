@@ -6,7 +6,7 @@ import {
 import { HAIR } from './hair';
 import { IDLE, POSES, RUN, WALK, cyclePose, lerpPose, type Pose } from './poses';
 
-export type CharacterState = 'idle' | 'walk' | 'run' | 'look' | 'point' | 'wave' | 'order' | 'turn' | 'teleport-out' | 'teleport-in';
+export type CharacterState = 'idle' | 'walk' | 'run' | 'look' | 'point' | 'wave' | 'order' | 'cheer' | 'turn' | 'teleport-out' | 'teleport-in';
 
 const HAIR_T = `translate(${HAIR_FIT.x} ${HAIR_FIT.y}) scale(${HAIR_FIT.scale})`;
 const WISPS = [

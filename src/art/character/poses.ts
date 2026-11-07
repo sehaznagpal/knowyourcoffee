@@ -27,6 +27,7 @@ export const POSES = {
   point: P({ armR: { a1: -33, a2: -33 }, handR: 'point', flareR: 0, tilt: -3, shiftX: 3 }),
   wave: P({ armR: { a1: -30, a2: -98 }, handR: 'open', tilt: 3 }),
   order: P({ armR: { a1: 64, a2: -24 }, tilt: -2 }),
+  cheer: P({ armR: { a1: -72, a2: -96 }, handR: 'open', tilt: -5, shiftX: 2 }),
   turn: P({ legL: { a: 3 }, legR: { a: -3 }, shiftX: 0, lean: 0, tilt: 0 }),
 };
 
