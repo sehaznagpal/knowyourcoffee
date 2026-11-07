@@ -418,3 +418,19 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
   .bag-fit.is-compact .arrow-btn.bag-step svg { width: calc(14px / var(--fit)); height: calc(14px / var(--fit)); }
   .bag-fit.is-compact .bag-down b { font-size: calc(14px / var(--fit)); }
 }
+
+/* ---- phone landscape: testing-room controls, round two ---- */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* mode pills: stacked on the right with 6px between, the last one level with the bottom of the cup */
+  .ph-room .room-tabs { top: auto; bottom: calc(var(--slab-h, 79px) - 2px); gap: 6px; }
+  /* back button: far left, snug */
+  .ph-back { position: fixed; left: calc(env(safe-area-inset-left) + 12px); top: calc(env(safe-area-inset-top) + 6px); height: auto; padding: 6px 10px; }
+  /* undo / clear / hint / SERVE IT: smaller, centred under the cup; the stats sit to the right of SERVE IT on the same row */
+  .ph-room-bar { bottom: calc(max(env(safe-area-inset-bottom), 12px) + 13px); align-items: center; }
+  .ph-room .counter-buttons { gap: 8px; align-items: center; }
+  .ph-room .counter-buttons button, .ph-room .counter-buttons .btn-primary { height: 32px; padding: 6px 12px; font-size: 14px; margin-left: 0; }
+  .ph-room-foot { position: absolute; left: calc(100% + 12px); top: 50%; translate: 0 -50%; display: block; }
+  .ph-room .room-stats { font-size: 13px; white-space: nowrap; }
+  /* the cup: 15% taller, its bottom still on the counter */
+  .gallery.compact .room-glass { transform: scaleY(1.15); transform-origin: 50% 100%; }
+}
