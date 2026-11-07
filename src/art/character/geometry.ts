@@ -25,36 +25,51 @@ const clean = (pts: Pt[], seed: number, step = 16) => sketch(pts, { seed, jitter
 const smooth = (pts: Pt[], seed: number) => sketch(pts, { seed, jitter: 0.3, step: 200 });
 const mirror = (pts: Pt[]): Pt[] => pts.map(([x, y]) => [2 * CX - x, y]);
 
-// ---- hair: a solid cap on the forehead, a lumpy bun on top, a few loose hooks at the temples. Nothing below the jaw. ----
-const FACE = { cx: CX, cy: 108, rx: 46, ry: 58 };
-// the cap's outer edge runs 5 units outside the face outline so the two share one black line
-const capOuter: Pt[] = [];
-for (let deg = -173; deg <= -7; deg += 14) {
-  const t = (deg * Math.PI) / 180;
-  capOuter.push([FACE.cx + (FACE.rx + 5) * Math.cos(t), FACE.cy + (FACE.ry + 5) * Math.sin(t)]);
-}
-// hairline, right temple to left: forehead showing, a slight side part (the small dip), no bangs
-const hairline: Pt[] = [[207, 104], [205, 88], [192, 74], [174, 66], [158, 65], [152, 66], [147, 76], [141, 67], [126, 74], [113, 88], [109, 104]];
-const bun: Pt[] = Array.from({ length: 32 }, (_, i) => {
-  const t = (i / 32) * Math.PI * 2;
-  const r = 24.5 + 5.5 * (0.5 - 0.5 * Math.cos(4 * t + 0.6)); // four soft lumps
-  return [CX + r * Math.cos(t), 30 + r * Math.sin(t)] as Pt;
+// ---- head and hair ----
+// A soft oval about 10% bigger than before, with a fuller chin (the lower half is a squarer superellipse).
+const FACE = { cx: CX, cy: 108, rx: 51, ry: 64 };
+const facePts: Pt[] = Array.from({ length: 24 }, (_, i) => {
+  const t = (i / 24) * Math.PI * 2;
+  const c = Math.cos(t), sn = Math.sin(t), e = sn > 0 ? 2 / 2.5 : 1;
+  return [FACE.cx + FACE.rx * Math.sign(c) * Math.abs(c) ** e, FACE.cy + FACE.ry * Math.sign(sn) * Math.abs(sn) ** e] as Pt;
 });
-// short loose hooks just above where the ears would be (left side; the right side mirrors them)
-const strandL: Pt[][] = [
-  [[114, 92], [101, 88], [92, 95], [95, 104]],
-  [[112, 103], [99, 105], [92, 114], [97, 121]],
-  [[115, 113], [105, 118], [102, 126]],
+
+// One solid mass over the top of the head, wider than the face, falling over the ears to cheek level (rounded ends).
+const hairOuter: Pt[] = [];
+for (let deg = 154; deg <= 386; deg += 12) {
+  const t = (deg * Math.PI) / 180;
+  hairOuter.push([FACE.cx + (FACE.rx + 9) * Math.cos(t), FACE.cy + (FACE.ry + 9) * Math.sin(t)]);
+}
+// soft side-swept curtain bangs: three big scallops ending just above the eyes, forehead showing at the part
+const hairlineLR: Pt[] = [
+  [114, 128], [113, 114], [114, 104], [119, 100], [125, 97], [133, 92], [140, 82], [146, 70], [150, 60],
+  [155, 68], [162, 78], [170, 84], [178, 80], [184, 70], [187, 66], [191, 74], [198, 86], [205, 96], [209, 108], [208, 128],
+];
+const hairMass: Pt[] = [
+  ...hairOuter, [215, 146], [208, 150], [203, 146],
+  ...[...hairlineLR].reverse(),
+  [110, 146], [104, 148], [102, 144],
+];
+
+// A big round lumpy bun, a little wider than tall, sitting back on the crown and overlapping the hair mass.
+const bun: Pt[] = Array.from({ length: 48 }, (_, i) => {
+  const t = (i / 48) * Math.PI * 2;
+  const bump = 1 + 0.15 * Math.abs(Math.sin(3 * t + 0.4)); // six curls
+  return [150 + 35 * Math.cos(t) * bump, 27 + 30 * Math.sin(t) * bump] as Pt;
+});
+// two tiny wisps curling out of the bun
+const wisps: Pt[][] = [
+  [[116, 24], [107, 19], [102, 26], [108, 32]],
+  [[184, 18], [193, 12], [199, 19], [193, 25]],
 ];
 
 const shoeBase: Pt[] = [[-12, 0], [18, -2], [28, 16], [62, 34], [88, 46], [96, 56], [92, 62], [-26, 62], [-34, 52], [-30, 26]];
 
 export const SHAPES = {
-  cap: smooth([...capOuter, ...hairline], 3),
+  cap: smooth(hairMass, 3),
   bun: smooth(bun, 4),
-  strandsL: strandL.map((p, i) => sketch(p, { closed: false, seed: 70 + i, jitter: 0, step: 200 })),
-  strandsR: strandL.map((p, i) => sketch(mirror(p), { closed: false, seed: 74 + i, jitter: 0, step: 200 })),
-  face: smooth(ellipse(FACE.cx, FACE.cy, FACE.rx, FACE.ry, 18), 5),
+  wisps: wisps.map((p, i) => sketch(p, { closed: false, seed: 70 + i, jitter: 0, step: 200 })),
+  face: smooth(facePts, 5),
   neck: clean([[144, 150], [172, 150], [174, 196], [142, 196]], 6),
 
   top: clean([[124, 190], [142, 192], [150, 202], [158, 206], [166, 202], [174, 192], [192, 190], [198, 204], [200, 346], [116, 346], [118, 204]], 7, 14),
@@ -95,7 +110,7 @@ export function face(turn: number) {
     eyeR: smooth(ellipse(CX + 17 + t, 106, 4.8, 6.4, 8), 41),
     nose: sketch([[CX + 4 + t, 112], [CX + 8 + t, 124], [CX + 1 + t, 127]], { closed: false, seed: 42, jitter: 0, step: 40 }),
     smile: sketch([[CX - 9 + t, 139], [CX + 2 + t, 145], [CX + 15 + t, 138]], { closed: false, seed: 43, jitter: 0, step: 40 }),
-    stud: smooth(ellipse(CX - 40 + t * 0.6, 150, 4.5, 4.5, 8), 44),
+    stud: smooth(ellipse(CX - 42 + t * 0.6, 155, 4.5, 4.5, 8), 44),
   };
 }
 

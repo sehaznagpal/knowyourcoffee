@@ -36,6 +36,7 @@ type Props = {
   turn?: number; // 1 = facing right, -1 = facing left, 0 = facing us (three-quarter between the two)
   erase?: number; // 0 = fully drawn, 1 = erased (feet first); counting back down redraws head first
   bubble?: string | null; // speech bubble text
+  viewBox?: string; // crop, for close-ups (default: the whole figure)
   edgePx?: number; // width of the beige sticker edge in screen px (needs a numeric height)
   bunDy?: number; // the bun's follow-through behind the body bob, in character units
   height?: number | string;
@@ -51,7 +52,7 @@ export function hipYOf(pose: Pose) {
 }
 
 /** One still of Sehaz. Named groups: hair-back, head, face, earring, jacket, top, tee, trousers, leg-left, leg-right, shoe-left, shoe-right, hand, bag. */
-export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edgePx = 3, bunDy = 0, height = 360, className }: Props) {
+export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edgePx = 3, bunDy = 0, viewBox, height = 360, className }: Props) {
   const t = Math.abs(turn);
   const sign = turn < 0 ? -1 : 1;
   const sx = sign * (0.88 + 0.12 * t);
@@ -73,7 +74,8 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
   const grip: [number, number] = [aL.wrist[0] + 14 * Math.cos(rad(aL.angle)), aL.wrist[1] + 14 * Math.sin(rad(aL.angle))];
   const bagAngle = Math.max(-35, Math.min(35, 0.45 * (90 - aL.angle)));
 
-  const edge = height && typeof height === 'number' ? (edgePx * CHAR_H) / height : 0;
+  const vb = (viewBox ?? `0 0 ${CHAR_W} ${CHAR_H}`).split(' ').map(Number);
+  const edge = height && typeof height === 'number' ? (edgePx * vb[3]) / height : 0;
   const figure = () => (
     <g transform={`translate(${CX} 0) scale(${sx} 1) translate(${-CX} 0)`}>
         <g id="leg-right" transform={rt.transform} style={k(0.1)}>
@@ -105,10 +107,11 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
             <g className="head" transform={`rotate(${pose.tilt} ${CX} ${NECK_Y})`} style={k(0.85)}>
               <g id="head"><O d={S.face} fill={PAPER} /></g>
               <g id="hair" style={k(1)}>
-                <g className="bun" transform={`translate(0 ${bunDy})`}><O d={S.bun} fill={INK} /></g>
+                <g className="bun" transform={`translate(0 ${bunDy})`}>
+                  <O d={S.bun} fill={INK} />
+                  {S.wisps.map((d, i) => <g key={i} className="strand" style={{ transformOrigin: `${[116, 184][i]}px ${[24, 18][i]}px`, animationDelay: `${-i * 0.9}s` }}><O d={d} w={5} /></g>)}
+                </g>
                 <O d={S.cap} fill={INK} />
-                {S.strandsL.map((d, i) => <g key={`l${i}`} className="strand" style={{ transformOrigin: `${[114, 112, 115][i]}px ${[92, 103, 113][i]}px`, animationDelay: `${-i * 0.7}s` }}><O d={d} w={5} /></g>)}
-                {S.strandsR.map((d, i) => <g key={`r${i}`} className="strand" style={{ transformOrigin: `${316 - [114, 112, 115][i]}px ${[92, 103, 113][i]}px`, animationDelay: `${-i * 0.9 - 0.4}s` }}><O d={d} w={5} /></g>)}
               </g>
               <g id="face">
                 <g className="eyes"><O d={f.eyeL} fill={INK} w={0} /><O d={f.eyeR} fill={INK} w={0} /></g>
@@ -145,8 +148,8 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
     <svg
       className={`char${className ? ' ' + className : ''}`}
       data-erasing={erase > 0.001 ? '' : undefined}
-      viewBox={`0 0 ${CHAR_W} ${CHAR_H}`}
-      style={{ height, width: 'auto', aspectRatio: `${CHAR_W} / ${CHAR_H}`, '--erase': erase } as CSSProperties}
+      viewBox={vb.join(' ')}
+      style={{ height, width: 'auto', aspectRatio: `${vb[2]} / ${vb[3]}`, '--erase': erase } as CSSProperties}
       role="img"
       aria-label="Sehaz, the gallery guide"
     >

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import styleBun from '../../reference/character/style-bun.png';
+import styleBun2 from '../../reference/character/style-bun-2.png';
 import styleBody from '../../reference/character/style-body.png';
 import styleMain from '../../reference/character/style-main.png';
 import { AnimatedCharacter, Character, type CharacterState } from '../art/character/Character';
@@ -39,13 +40,20 @@ export function CharacterReview() {
   return (
     <main className="review">
       <h1>/dev/character</h1>
-      <p className="lede">Stage 0, hair round. Left to right: style-main.png, style-body.png, style-bun.png and the new character, all at the same height.</p>
+      <p className="lede">Stage 0, head and hair round. Left to right: style-main.png, style-body.png and the new character, all at the same height.</p>
 
       <section className="refs">
         <figure><img src={styleMain} alt="style-main.png" /><figcaption>style-main.png (line, hair, face)</figcaption></figure>
         <figure><img src={styleBody} alt="style-body.png" /><figcaption>style-body.png (proportions, poses)</figcaption></figure>
-        <figure><img src={styleBun} alt="style-bun.png" /><figcaption>style-bun.png (hair)</figcaption></figure>
         <figure><Character pose={POSES.idle} height={420} /><figcaption>new character</figcaption></figure>
+      </section>
+
+      <h2>Hair close-up</h2>
+      <p className="lede">Head and shoulders, large, next to the two hair references.</p>
+      <section className="refs">
+        <figure><img src={styleBun} alt="style-bun.png" /><figcaption>style-bun.png</figcaption></figure>
+        <figure><img src={styleBun2} alt="style-bun-2.png" /><figcaption>style-bun-2.png</figcaption></figure>
+        <figure><Character pose={POSES.idle} viewBox="30 -12 256 290" height={420} /><figcaption>new hair, close-up</figcaption></figure>
       </section>
 
       <h2>Pose sheet</h2>
