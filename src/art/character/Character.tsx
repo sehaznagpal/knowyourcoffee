@@ -1,22 +1,28 @@
 import { createContext, useContext, useEffect, useRef, useState, type CSSProperties } from 'react';
 import './character.css';
 import {
-  BEIGE, BLUE, CHAR_H, CHAR_W, CX, HIP_X, HIP_Y, INK, LEG_LEN, LILAC, NECK_Y, PAPER, SHAPES as S, arm, face, handPath,
+  BEIGE, BLUE, CHAR_H, CHAR_W, CX, HAIR_FIT, HIP_X, HIP_Y, INK, LEG_LEN, LILAC, NECK_Y, PAPER, SHAPES as S, arm, face, hairPoint, handPath,
 } from './geometry';
+import { HAIR } from './hair';
 import { IDLE, POSES, RUN, WALK, cyclePose, lerpPose, type Pose } from './poses';
 
 export type CharacterState = 'idle' | 'walk' | 'run' | 'look' | 'point' | 'wave' | 'order' | 'turn' | 'teleport-out' | 'teleport-in';
 
+const HAIR_T = `translate(${HAIR_FIT.x} ${HAIR_FIT.y}) scale(${HAIR_FIT.scale})`;
+const WISPS = [
+  { d: HAIR.wispsLeft, at: hairPoint(132, 244) },
+  { d: HAIR.wispsRight, at: hairPoint(320, 244) },
+];
 const W = 8; // one even outline: about 3.3px when she stands 38% of an 832px frame
 const rad = (d: number) => (d * Math.PI) / 180;
 const GROUND = HIP_Y + LEG_LEN + 0; // ankle height when standing straight (706)
 
-type PathProps = { d: string; fill?: string; w?: number; stroke?: string };
+type PathProps = { d: string; fill?: string; w?: number; stroke?: string; evenodd?: boolean };
 // The sticker edge: the whole figure is drawn once more underneath in beige, every stroke widened by 2x the edge, so the
 // cut-out outline is one even width all the way round.
 const EdgeCtx = createContext(0);
 // Every outline has pathLength 1 so the teleport can erase and redraw it with stroke-dashoffset.
-const O = ({ d, fill = 'none', w = W, stroke = INK }: PathProps) => {
+const O = ({ d, fill = 'none', w = W, stroke = INK, evenodd = false }: PathProps) => {
   const e = useContext(EdgeCtx);
   return (
     <path
@@ -25,6 +31,7 @@ const O = ({ d, fill = 'none', w = W, stroke = INK }: PathProps) => {
       stroke={e ? BEIGE : stroke}
       strokeWidth={e ? w + 2 * e : w}
       strokeLinejoin="round" strokeLinecap="round"
+      fillRule={evenodd ? 'evenodd' : undefined}
     />
   );
 };
@@ -106,13 +113,16 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
 
             <g className="head" transform={`rotate(${pose.tilt} ${CX} ${NECK_Y})`} style={k(0.85)}>
               <g id="head"><O d={S.face} fill={PAPER} /></g>
-              <g id="hair" style={k(1)}>
-                <g className="bun" transform={`translate(0 ${bunDy})`}>
-                  <O d={S.bun} fill={INK} />
-                  {S.wisps.map((d, i) => <g key={i} className="strand" style={{ transformOrigin: `${[116, 184][i]}px ${[24, 18][i]}px`, animationDelay: `${-i * 0.9}s` }}><O d={d} w={5} /></g>)}
-                </g>
-                <O d={S.cap} fill={INK} />
+              {/* hair: potrace of the reference close-up, kept as traced; solid ink, no outline stroke */}
+              <g id="hair" style={k(1)} transform={HAIR_T}>
+                <g className="bun" transform={`translate(0 ${bunDy / HAIR_FIT.scale})`}><O d={HAIR.bun} fill={INK} w={0} evenodd /></g>
+                <O d={HAIR.cap} fill={INK} w={0} evenodd />
               </g>
+              {WISPS.map((wi, i) => (
+                <g key={i} className="strand" style={{ transformOrigin: `${wi.at[0]}px ${wi.at[1]}px`, animationDelay: `${-i * 0.9}s` }}>
+                  <g transform={HAIR_T} style={k(1)}><O d={wi.d} fill={INK} w={0} evenodd /></g>
+                </g>
+              ))}
               <g id="face">
                 <g className="eyes"><O d={f.eyeL} fill={INK} w={0} /><O d={f.eyeR} fill={INK} w={0} /></g>
                 <O d={f.nose} w={4} />

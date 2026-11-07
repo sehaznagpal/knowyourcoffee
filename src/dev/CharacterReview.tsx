@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import styleBun from '../../reference/character/style-bun.png';
-import styleBun2 from '../../reference/character/style-bun-2.png';
+import styleBunCloseup from '../../reference/character/style-bun-closeup.png';
 import styleBody from '../../reference/character/style-body.png';
 import styleMain from '../../reference/character/style-main.png';
 import { AnimatedCharacter, Character, type CharacterState } from '../art/character/Character';
@@ -49,11 +49,11 @@ export function CharacterReview() {
       </section>
 
       <h2>Hair close-up</h2>
-      <p className="lede">Head and shoulders, large, next to the two hair references.</p>
+      <p className="lede">Head and shoulders, large, next to the reference the hair was traced from.</p>
       <section className="refs">
         <figure><img src={styleBun} alt="style-bun.png" /><figcaption>style-bun.png</figcaption></figure>
-        <figure><img src={styleBun2} alt="style-bun-2.png" /><figcaption>style-bun-2.png</figcaption></figure>
-        <figure><Character pose={POSES.idle} viewBox="30 -12 256 290" height={420} /><figcaption>new hair, close-up</figcaption></figure>
+        <figure><img src={styleBunCloseup} alt="style-bun-closeup.png" style={{ height: 420 }} /><figcaption>style-bun-closeup.png (the traced hair)</figcaption></figure>
+        <figure><Character pose={POSES.idle} viewBox="20 -66 276 330" height={420} /><figcaption>new hair, close-up</figcaption></figure>
       </section>
 
       <h2>Pose sheet</h2>

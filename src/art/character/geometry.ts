@@ -34,41 +34,14 @@ const facePts: Pt[] = Array.from({ length: 24 }, (_, i) => {
   return [FACE.cx + FACE.rx * Math.sign(c) * Math.abs(c) ** e, FACE.cy + FACE.ry * Math.sign(sn) * Math.abs(sn) ** e] as Pt;
 });
 
-// One solid mass over the top of the head, wider than the face, falling over the ears to cheek level (rounded ends).
-const hairOuter: Pt[] = [];
-for (let deg = 154; deg <= 386; deg += 12) {
-  const t = (deg * Math.PI) / 180;
-  hairOuter.push([FACE.cx + (FACE.rx + 9) * Math.cos(t), FACE.cy + (FACE.ry + 9) * Math.sin(t)]);
-}
-// soft side-swept curtain bangs: three big scallops ending just above the eyes, forehead showing at the part
-const hairlineLR: Pt[] = [
-  [114, 128], [113, 114], [114, 104], [119, 100], [125, 97], [133, 92], [140, 82], [146, 70], [150, 60],
-  [155, 68], [162, 78], [170, 84], [178, 80], [184, 70], [187, 66], [191, 74], [198, 86], [205, 96], [209, 108], [208, 128],
-];
-const hairMass: Pt[] = [
-  ...hairOuter, [215, 146], [208, 150], [203, 146],
-  ...[...hairlineLR].reverse(),
-  [110, 146], [104, 148], [102, 144],
-];
-
-// A big round lumpy bun, a little wider than tall, sitting back on the crown and overlapping the hair mass.
-const bun: Pt[] = Array.from({ length: 48 }, (_, i) => {
-  const t = (i / 48) * Math.PI * 2;
-  const bump = 1 + 0.15 * Math.abs(Math.sin(3 * t + 0.4)); // six curls
-  return [150 + 35 * Math.cos(t) * bump, 27 + 30 * Math.sin(t) * bump] as Pt;
-});
-// two tiny wisps curling out of the bun
-const wisps: Pt[][] = [
-  [[116, 24], [107, 19], [102, 26], [108, 32]],
-  [[184, 18], [193, 12], [199, 19], [193, 25]],
-];
+// Hair is traced from reference/character/style-bun-closeup.png (see hair.ts). The reference is placed so its face matches ours:
+// reference face width 142 px (outline centre to centre) = our face width 102, face centre x 226 -> CX, eyebrow line y 225 -> 92.
+export const HAIR_FIT = { scale: 102 / 142, x: CX - 226 * (102 / 142), y: 92 - 225 * (102 / 142) };
+export const hairPoint = (px: number, py: number): Pt => [px * HAIR_FIT.scale + HAIR_FIT.x, py * HAIR_FIT.scale + HAIR_FIT.y];
 
 const shoeBase: Pt[] = [[-12, 0], [18, -2], [28, 16], [62, 34], [88, 46], [96, 56], [92, 62], [-26, 62], [-34, 52], [-30, 26]];
 
 export const SHAPES = {
-  cap: smooth(hairMass, 3),
-  bun: smooth(bun, 4),
-  wisps: wisps.map((p, i) => sketch(p, { closed: false, seed: 70 + i, jitter: 0, step: 200 })),
   face: smooth(facePts, 5),
   neck: clean([[144, 150], [172, 150], [174, 196], [142, 196]], 6),
 
