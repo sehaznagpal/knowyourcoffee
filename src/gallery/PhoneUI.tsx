@@ -2,6 +2,8 @@ import { forwardRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Drink } from '../data/drinks';
 import { SearchBox, type SearchHandle } from './SearchBox';
+import { toggleMuted, useMuted } from '../audio/sound';
+import { SpeakerIcon } from './SpeakerIcon';
 
 type Props = {
   inRoom: boolean;
@@ -27,6 +29,7 @@ const Chevron = ({ left }: { left?: boolean }) => (
 /** Phone landscape: controls in real screen pixels (touch targets of 44 px and up), outside the scaled stage, inside the safe areas. */
 export const PhoneUI = forwardRef<SearchHandle, Props>(function PhoneUI(p, ref) {
   const [searching, setSearching] = useState(false);
+  const soundOff = useMuted();
   const last = useState({ t: 0 })[0]; // time of the previous release, for double-tap-and-hold to run
 
   const hold = (dir: -1 | 1) => ({
@@ -43,6 +46,7 @@ export const PhoneUI = forwardRef<SearchHandle, Props>(function PhoneUI(p, ref) 
       <div className="ph-top">
         {p.inRoom ? <button type="button" className="ph-back" onClick={p.onBack}>← back to the gallery</button> : <span />}
         <div className="ph-top-right">
+          <button type="button" className="ph-icon ph-help" aria-pressed={!soundOff} aria-label={soundOff ? 'Sound is off' : 'Sound is on'} onClick={toggleMuted}><SpeakerIcon off={soundOff} /></button>
           {!p.inRoom ? (
             <>
               <button type="button" className="ph-icon" data-wt="search" aria-label="Find a coffee" aria-expanded={searching} onClick={() => setSearching((s) => !s)}>

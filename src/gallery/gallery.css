@@ -340,5 +340,6 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
 .wt-arrow-bottom { bottom: -9px; margin-left: -7px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
 .wt-arrow-left { left: -9px; margin-top: -7px; border-left: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
 .wt-arrow-right { right: -9px; margin-top: -7px; border-right: 2px solid var(--ink); border-top: 2px solid var(--ink); }
-.arrow-btn.g-help { top: 680px; font: 700 26px 'Excon', sans-serif; color: var(--ink); }
-.ph-help { font: 700 22px 'Excon', sans-serif; color: var(--ink); }
+.arrow-btn.g-help { top: 680px; font: 700 26px 'Excon', sans-serif; color: var(--ink); background: #FFFEFA; }
+.arrow-btn.g-sound { top: 14px; width: 48px; height: 48px; background: #FFFEFA; z-index: 15; }
+.ph-help { font: 700 22px 'Excon', sans-serif; color: var(--ink); background: #FFFEFA; }

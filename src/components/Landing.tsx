@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { landing } from '../art-loader';
 import { AnimatedCharacter } from '../art/character/Character';
+import { play, unlock } from '../audio/sound';
 
 type Props = { onStart: () => void; zooming: boolean };
 
@@ -20,10 +21,11 @@ export function Landing({ onStart, zooming }: Props) {
 
   const tap = () => {
     if (zooming) return;
+    unlock(); // the door tap is the first gesture: the music starts here
     // a second tap skips the walk, and so does reduced motion
-    if (phase !== 'idle' || reduced()) { timers.current.forEach(clearTimeout); timers.current = []; setPhase('in'); onStart(); return; }
+    if (phase !== 'idle' || reduced()) { timers.current.forEach(clearTimeout); timers.current = []; setPhase('in'); play.door(); onStart(); return; }
     setPhase('walk');
-    timers.current.push(window.setTimeout(() => setPhase('in'), WALK_MS));
+    timers.current.push(window.setTimeout(() => { setPhase('in'); play.door(); }, WALK_MS));
     timers.current.push(window.setTimeout(onStart, WALK_MS + 220));
   };
 
@@ -32,7 +34,7 @@ export function Landing({ onStart, zooming }: Props) {
       <div className="landing-art" dangerouslySetInnerHTML={{ __html: landing }} />
       <p className="landing-sign">never sure what coffee to order? welcome to the coffee tour to walk around, understand what goes in each cup, and make your next order easy!</p>
       <div className={`landing-char${phase === 'in' ? ' is-in' : ''}`} style={{ left: (phase === 'idle' ? HOME_X : DOOR_X) - CHAR_H * 0.2, top: FEET - CHAR_H, transitionDuration: phase === 'walk' || phase === 'in' ? `${WALK_MS}ms` : '0ms' }} aria-hidden="true">
-        <AnimatedCharacter state={phase === 'walk' ? 'walk' : phase === 'in' ? 'idle' : 'idle'} facing={1} height={CHAR_H} />
+        <AnimatedCharacter state={phase === 'walk' ? 'walk' : phase === 'in' ? 'idle' : 'idle'} facing={1} height={CHAR_H} steps />
       </div>
       <p className="landing-caption">tap on the door to start.</p>
       <button

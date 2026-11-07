@@ -5,6 +5,7 @@ import {
   PAPER, SHAPES as S, SKIN, SHOE, SHOULDER_L, SHOULDER_R, SLEEVE, SPLIT, THUMB, TROUSER, handPath, rotAbout, type HandKind,
 } from './geometry';
 import * as V from './v2shapes';
+import { play } from '../../audio/sound';
 import { IDLE, POSES, RUN, WALK, cyclePose, lerpPose, type Pose } from './poses';
 
 export type CharacterState = 'idle' | 'walk' | 'run' | 'look' | 'point' | 'wave' | 'order' | 'cheer' | 'turn' | 'teleport-out' | 'teleport-in';
@@ -339,9 +340,9 @@ const same = (a: Frame | null, b: Frame) =>
   near(a.pose.armL.a1, b.pose.armL.a1) && near(a.pose.armL.a2, b.pose.armL.a2) && near(a.pose.armR.a1, b.pose.armR.a1) && near(a.pose.armR.a2, b.pose.armR.a2) &&
   near(a.pose.lean, b.pose.lean) && near(a.pose.shiftX, b.pose.shiftX) && near(a.pose.tilt, b.pose.tilt) && near(a.pose.flareR, b.pose.flareR) && a.pose.handR === b.pose.handR;
 
-export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
+export function useCharacterMotion(state: CharacterState, facing: 1 | -1, steps = false) {
   const [frame, setFrame] = useState({ pose: IDLE, turn: facing as number, erase: state === 'teleport-in' ? 1 : 0, opacity: 1, bunDy: 0, bagLag: 4.4 });
-  const live = useRef({ pose: IDLE, turn: facing as number, state, facing, since: performance.now(), dy: 0, bun: 0, lag: 4.4 });
+  const live = useRef({ pose: IDLE, turn: facing as number, state, facing, since: performance.now(), dy: 0, bun: 0, lag: 4.4, stepIdx: -1 });
   const prevState = useRef(state);
 
   if (prevState.current !== state) {
@@ -366,6 +367,11 @@ export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
         : L.state === 'turn' ? POSES.turn
         : L.state in POSES ? POSES[L.state as keyof typeof POSES]
         : IDLE;
+      // a soft tap on each foot-contact frame of the walk and run cycles
+      if (steps && cyc) {
+        const idx = Math.floor((now / 1000) * (L.state === 'run' ? 16 : 8));
+        if (idx !== L.stepIdx) { L.stepIdx = idx; if (idx % 2 === 0) play.step(L.state === 'run'); }
+      } else L.stepIdx = -1;
       L.pose = lerpPose(L.pose, target, 1 - Math.exp(-dt / (cyc ? 0.03 : 0.07)));
       // turning passes through the three-quarter view, then flips
       const front = L.state === 'turn' || L.state.startsWith('teleport'); // the teleport faces the viewer first
@@ -395,8 +401,8 @@ export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
   return frame;
 }
 
-export function AnimatedCharacter({ state = 'idle', facing = 1, bubble, height, className }: { state?: CharacterState; facing?: 1 | -1; bubble?: string | null; height?: number | string; className?: string }) {
-  const m = useCharacterMotion(state, facing);
+export function AnimatedCharacter({ state = 'idle', facing = 1, bubble, height, className, steps = false }: { state?: CharacterState; facing?: 1 | -1; bubble?: string | null; height?: number | string; className?: string; steps?: boolean }) {
+  const m = useCharacterMotion(state, facing, steps);
   return (
     <div style={{ opacity: m.opacity, display: 'inline-block', lineHeight: 0 }}>
       <Character pose={m.pose} turn={m.turn} erase={m.erase} bunDy={m.bunDy} bagLag={m.bagLag} bubble={state === 'order' ? (bubble ?? 'make me a ___') : null} height={height} className={className} />

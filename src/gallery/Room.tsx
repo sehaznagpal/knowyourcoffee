@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { TestGlass } from '../components/TestGlass';
 import { COLOR, LABEL } from '../data/colors';
 import { DRINKS, type Drink, type Ingredient } from '../data/drinks';
+import { play } from '../audio/sound';
 import { CAPACITY, Deck, SHELF, check, countsOf, displayLayers, feedback, hintStep, type Result } from '../logic/quiz';
 import { loadProgress, recordAnswer, type Progress } from '../logic/storage';
 import { CARD_H, CARD_W, CardFront } from './CardFace';
@@ -91,6 +92,7 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
 
   const add = (ing: Ingredient) => {
     if (full || result || !drink) return;
+    play.pour(ing);
     setPours((p) => [...p, ing]);
     setPour((x) => ({ ing, n: (x?.n ?? 0) + 1 }));
   };
@@ -101,6 +103,7 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
     deck.current!.report(drink.id, r.ok);
     setProgress((p) => recordAnswer(p, drink.id, r.ok));
     setResult(r);
+    window.setTimeout(() => (r.ok ? play.nailed() : play.notQuite()), 120);
     onAnswered();
     if (r.ok) { onMood('cheer'); onCheer(); setFly(drink); } else onMood('idle');
   };
@@ -176,8 +179,8 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
   );
   const buttonsEl = (
       <div className="counter-buttons">
-        <button type="button" className="btn-inline" disabled={dis || !pours.length} onClick={() => setPours((p) => p.slice(0, -1))}>undo</button>
-        <button type="button" className="btn-inline" disabled={dis || !pours.length} onClick={() => setPours([])}>clear</button>
+        <button type="button" className="btn-inline" disabled={dis || !pours.length} onClick={() => { play.swish(); setPours((p) => p.slice(0, -1)); }}>undo</button>
+        <button type="button" className="btn-inline" disabled={dis || !pours.length} onClick={() => { play.swish(); setPours([]); }}>clear</button>
         <button type="button" className="btn-inline" disabled={dis || hint === 2} onClick={() => setHint((h) => (h === 0 ? 1 : 2))}>hint</button>
         <button type="button" className="btn-primary" disabled={dis || !pours.length} onClick={serve}>SERVE IT</button>
       </div>

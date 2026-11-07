@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { DRINKS, type Category, type Drink } from '../data/drinks';
 import { CARD_H, CARD_W, CardBack, CardFront, cardLabel } from './CardFace';
 import { FRAMES } from './layout';
+import { play } from '../audio/sound';
 
 export type BagState = { seen: Set<string>; mastered: Set<string> };
 export const inBag = (s: BagState, id: string) => s.seen.has(id) || s.mastered.has(id);
@@ -80,7 +81,7 @@ export function BagPanel({ state, onShow, onClose, onReset, compact }: { state: 
         <div className="bag-body">
           <div className="bag-left">
             <div className="bag-bigwrap" style={{ width: Math.round(CARD_W * GRID_H / CARD_H), height: GRID_H }}>
-            <div className={`cc bag-big${flipped && curOpen ? ' is-flipped' : ''}`} style={{ width: CARD_W, height: CARD_H, transform: `scale(${GRID_H / CARD_H})` }} onClick={() => curOpen && setFlipped((f) => !f)}>
+            <div className={`cc bag-big${flipped && curOpen ? ' is-flipped' : ''}`} style={{ width: CARD_W, height: CARD_H, transform: `scale(${GRID_H / CARD_H})` }} onClick={() => { if (curOpen) { play.flip(); setFlipped((f) => !f); } }}>
               <div className="cc-flip">
                 <div className="cc-face cc-front">
                   {curOpen ? <CardFront drink={cur} mastered={state.mastered.has(cur.id)} /> : <span className="bag-down bag-down-big"><b>?</b><small>not seen yet</small></span>}
@@ -93,7 +94,7 @@ export function BagPanel({ state, onShow, onClose, onReset, compact }: { state: 
               <button type="button" className="arrow-btn bag-step" aria-label="Previous coffee" onClick={() => go(-1)}>
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M13 3 6 10l7 7" stroke="#1e1e1e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>
-              <button type="button" className="btn-inline" disabled={!curOpen} onClick={() => setFlipped((f) => !f)}>{flipped ? 'front' : 'flip'}</button>
+              <button type="button" className="btn-inline" disabled={!curOpen} onClick={() => { play.flip(); setFlipped((f) => !f); }}>{flipped ? 'front' : 'flip'}</button>
               <button type="button" className="btn-inline" onClick={() => onShow(cur)}>show on the wall</button>
               <button type="button" className="arrow-btn bag-step" aria-label="Next coffee" onClick={() => go(1)}>
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M7 3l7 7-7 7" stroke="#1e1e1e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>

@@ -15,6 +15,8 @@ import { TestingRoom } from './Room';
 import { useCompact } from './compact';
 import { PhoneUI } from './PhoneUI';
 import { Walkthrough, walkthroughSeen } from './Walkthrough';
+import { SpeakerIcon } from './SpeakerIcon';
+import { armGestureUnlock, play, setDuck, toggleMuted, useMuted } from '../audio/sound';
 import { Foreground, World } from './World';
 import {
   CHAR_H, CHAR_W, DEAD_ZONE, DOOR_X, FEET_Y, FOREGROUND_PARALLAX, FRAMES, FRAME_PITCH, PROXIMITY, ROOMS, START_X, STAGE_W, TEST_DOOR_X, TOUR_X,
@@ -108,6 +110,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
   const [mapOpen, setMapOpen] = useState(false);
   const [bagOpen, setBagOpen] = useState(false);
   const [help, setHelp] = useState(false);
+  const soundOff = useMuted();
   const helpFrom = useRef<number | null>(null); // where she was when the walkthrough opened, so she can go back
   const [, setVer] = useState(0);
   const [tourSaved, setTourSaved] = useState<number | null>(getTourAt());
@@ -171,6 +174,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
     const rm = reduced();
     L.tp = { phase: rm ? 'paper' : 'turn', t0: now, start: now, x: dest, frame: openCard ? f?.id : undefined, point: !!f && !openCard, fromCx: L.cx, toCx: 0, wipe: Math.abs(roomOf(dest) - roomOf(L.x)) > 3, jumped: false };
     if (rm) setPaper((k) => k + 1);
+    play.teleportOut();
   }, []);
   const walkToFrame = useCallback((f: FramePlace) => goTo(f.x, f), [goTo]);
   // Into the testing room and back: the same teleport, with a paper wipe hiding the change of scene.
@@ -185,6 +189,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
     const rm = reduced();
     L.tp = { room: enter ? 'enter' : 'leave', phase: rm ? 'paper' : 'turn', t0: now, start: now, x: enter ? L.x : L.returnX, fromCx: L.cx, toCx: 0, wipe: true, jumped: false };
     if (rm) setPaper((k) => k + 1);
+    play.teleportOut();
   }, []);
   const bounce = useCallback(() => {
     charInner.current?.animate(
@@ -195,9 +200,9 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
   const look = useCallback(() => {
     const t = live.current.target;
     if (t?.kind === 'frame') setCard(FRAMES.find((f) => f.id === t.id)!.drink);
-    else if (t?.kind === 'door') onHome();
+    else if (t?.kind === 'door') { play.door(); onHome(); }
     else if (t?.kind === 'tour') startTour();
-    else if (t?.kind === 'testdoor') goRoom(true);
+    else if (t?.kind === 'testdoor') { play.door(); goRoom(true); }
   }, [onHome, goRoom, startTour]);
 
   // ---- keyboard ----
@@ -206,6 +211,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
     const onKey = (e: KeyboardEvent) => {
       if (!L.active) return;
       if ((e.target as Element).closest?.('input')) return; // typing in the search box
+      if (e.code === 'KeyS' && !e.repeat && !e.ctrlKey && !e.metaKey) { toggleMuted(); return; }
       if (e.key === '/' && !L.modal) { e.preventDefault(); searchRef.current?.focus(); return; }
       if (e.key === 'Escape') {
         if (L.tour !== null) endTour();
@@ -263,7 +269,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
         } else if (T.phase === 'pan') {
           const f = clamp(e / TP.pan, 0, 1), ease = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
           if (T.wipe) { if (!T.jumped && f >= 0.5) { L.cx = T.toCx; T.jumped = true; applyRoom(T); } } else L.cx = T.fromCx + (T.toCx - T.fromCx) * ease;
-          if (e >= TP.pan) { L.cx = T.toCx; T.phase = 'in'; T.t0 = now; L.face = 1; }
+          if (e >= TP.pan) { L.cx = T.toCx; T.phase = 'in'; T.t0 = now; L.face = 1; play.teleportIn(); }
         } else if (T.phase === 'paper' && !T.jumped && e >= 100) { L.x = T.x; L.cx = clamp(T.x, hv, WORLD_W - hv); T.jumped = true; applyRoom(T); }
         const done = (T.phase === 'in' && e >= TP.in) || (T.phase === 'paper' && e >= 200);
         if (done) {
@@ -377,6 +383,13 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
     const on = [...document.querySelectorAll('.gframe')].some((e) => { const r = e.getBoundingClientRect(); return r.left > 60 && r.right < window.innerWidth - 60; });
     if (!on) goTo(FRAMES[0].x, FRAMES[0], false);
   };
+  // sound: the music ducks while a card, the bag or the walkthrough is open; the bag and the cards have their own sounds
+  useEffect(() => { armGestureUnlock(); }, []);
+  useEffect(() => { setDuck(!!card || bagOpen || help); }, [card, bagOpen, help]);
+  const firstBag = useRef(true);
+  useEffect(() => { if (firstBag.current) { firstBag.current = false; return; } play.bag(bagOpen); }, [bagOpen]);
+  const hadCard = useRef(false);
+  useEffect(() => { if (card && !hadCard.current) play.cardOpen(); hadCard.current = !!card; }, [card]);
   const onHold = (d: -1 | 0 | 1, run = false) => { live.current.hold = d; live.current.holdRun = d !== 0 && run; };
   const lookLabels = { frame: 'Look closer', door: 'Back to the café', tour: 'Take the tour', testdoor: 'Test what you learned' } as const;
   const near = target && target.kind !== 'frame' ? target.kind : null;
@@ -410,12 +423,17 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
       {/* she is the top world layer: nothing in the world or the foreground draws over her, only the HUD below */}
       <div ref={topEl} className="g-world g-top">
         <div ref={charEl} className="g-char" data-wt="her" style={{ top: feetY - charH, width: charW, height: charH }}>
-          <div ref={charInner}><AnimatedCharacter state={cstate} facing={facing} height={charH} bubble="" /></div>
+          <div ref={charInner}><AnimatedCharacter state={cstate} facing={facing} height={charH} bubble="" steps /></div>
           {hintText && !card && !mapOpen && !inRoom ? <i className="look-hint">{hintText}</i> : null}
         </div>
       </div>
 
-      {!inRoom && !compact ? <SearchBox ref={searchRef} style={{ left: viewLeft + 24 }} onPick={(d) => { const f = FRAMES.find((q) => q.id === d.id)!; goTo(f.x, f); }} /> : null}
+      {!compact ? (
+        <button type="button" className="arrow-btn g-sound" data-wt="sound" style={{ left: viewLeft + 24 }} aria-pressed={!soundOff} aria-label={soundOff ? 'Sound is off (S)' : 'Sound is on (S)'} onClick={toggleMuted}>
+          <SpeakerIcon off={soundOff} />
+        </button>
+      ) : null}
+      {!inRoom && !compact ? <SearchBox ref={searchRef} style={{ left: viewLeft + 24 + 48 + 14 }} onPick={(d) => { const f = FRAMES.find((q) => q.id === d.id)!; goTo(f.x, f); }} /> : null}
       {inRoom && !compact ? <button type="button" className="g-back" style={{ left: viewLeft + viewW - 24, top: 768, transform: 'translateX(-100%)' }} onClick={() => goRoom(false)}>← back to the gallery</button> : null}
       {!inRoom && !compact ? (
         <button type="button" className="g-mini" data-wt="map" style={{ left: viewLeft + viewW - 20 - miniW - 24 }} aria-label="Open the map (M)" onClick={() => setMapOpen(true)}>

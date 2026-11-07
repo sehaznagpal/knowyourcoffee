@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { Drink } from '../data/drinks';
 import { CARD_H, CARD_W, CardBack, CardFront, cardLabel } from './CardFace';
 import { firstOpen } from './saved';
+import { play } from '../audio/sound';
 
 type Tour = { i: number; total: number; onNext: () => void; onEnd: () => void };
 type Props = {
@@ -44,10 +45,10 @@ export function CoffeeCard({ drink, mastered, tour, onClose, onNav, onJump, onSh
   useEffect(() => {
     userFlipped.current = false;
     if (!firstOpen(drink.id)) return;
-    const t = window.setTimeout(() => { if (!userFlipped.current) setFlipped(true); }, 4000);
+    const t = window.setTimeout(() => { if (!userFlipped.current) { play.flip(); setFlipped(true); } }, 4000);
     return () => clearTimeout(t);
   }, [drink.id]);
-  const flip = () => { userFlipped.current = true; setFlipped((f) => !f); };
+  const flip = () => { userFlipped.current = true; play.flip(); setFlipped((f) => !f); };
 
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;

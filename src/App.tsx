@@ -5,6 +5,7 @@ import { Gallery } from './gallery/Gallery';
 import { FLOOR_Y } from './gallery/layout';
 import './gallery/gallery.css';
 import { TestModal } from './components/TestModal';
+import { installClickSound } from './audio/sound';
 
 const FRAME = { w: 1280, h: 832 };
 const DOOR_CENTER = { x: 700, y: 480 };
@@ -39,6 +40,7 @@ export default function App() {
   const scale = useStageScale();
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  useEffect(() => installClickSound(), []);
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
 
   const start = () => {

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { play } from '../audio/sound';
 
 const KEY = 'kyc-walkthrough-seen';
 export const walkthroughSeen = () => { try { return localStorage.getItem(KEY) === '1'; } catch { return true; } };
@@ -38,7 +39,7 @@ export function Walkthrough({ onClose, onStep, touch }: { onClose: () => void; o
   const step = STEPS[i];
 
   const close = () => { markSeen(); onClose(); };
-  const next = () => (i + 1 < STEPS.length ? setI(i + 1) : close());
+  const next = () => { play.next(); if (i + 1 < STEPS.length) setI(i + 1); else close(); };
 
   useEffect(() => { onStep(i); }, [i]); // eslint-disable-line react-hooks/exhaustive-deps
   // follow the target every frame (the camera may still be moving when she has just been sent to a frame)
