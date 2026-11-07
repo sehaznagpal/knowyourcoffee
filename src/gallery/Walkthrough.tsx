@@ -8,7 +8,7 @@ const markSeen = () => { try { localStorage.setItem(KEY, '1'); } catch { /* priv
 
 const STEPS = [
   { key: 'her', text: 'this is you. use ← → or the arrows to walk. hold shift to run.', touch: 'this is you. use ← → or the arrows to walk. double-tap and hold an arrow to run.' },
-  { key: 'frame', text: 'every coffee hangs here. walk up and press ↑ to look closer.' },
+  { key: 'frame', text: 'every coffee hangs here. walk up and press ↑ to look closer.', touch: "every coffee hangs here. walk up to a frame and tap the eye to see what's inside." },
   { key: 'search', text: "know what you want? search and she'll take you there." },
   { key: 'map', text: 'where you are in the gallery. tap a room to jump to it.' },
   { key: 'bag', text: 'every coffee you look at is saved here as a card.' },

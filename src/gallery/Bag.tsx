@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { DRINKS, type Category, type Drink } from '../data/drinks';
-import { CARD_H, CARD_W, CardBack, CardFront, cardLabel } from './CardFace';
+import { CARD_H, CARD_W, CAT_STYLE, CardBack, CardFront, cardLabel } from './CardFace';
 import { FRAMES } from './layout';
 import { play } from '../audio/sound';
 
@@ -13,7 +13,7 @@ const FILTERS = ['all', 'seen', 'mastered', 'still to learn'] as const;
 type Filter = (typeof FILTERS)[number];
 const GRID_H = 3 * 109 + 2 * 8; // the grid's height; the big card is scaled to match it exactly
 const THUMB = 76 / CARD_W; // thumbnails are the card fronts scaled down
-const CAT_COLOR: Record<Category, string> = { shots: '#3B2314', 'with water': '#8FE5FF', 'with drip': '#7A4A2E', 'with milk': '#C9B6CB', 'cold & sweet': '#FF6F82' };
+const CAT_COLOR: Record<Category, string> = { shots: CAT_STYLE.shots.bg, 'with water': CAT_STYLE['with water'].bg, 'with drip': CAT_STYLE['with drip'].bg, 'with milk': CAT_STYLE['with milk'].bg, 'cold & sweet': CAT_STYLE['cold & sweet'].bg };
 
 /** A round lilac button, the size and style of the arrow buttons, with a black bag on it. The counts are inside the bag. */
 export function BagButton({ state, left, onClick, className = 'arrow-btn g-bag' }: { state: BagState; left?: number; onClick: () => void; className?: string }) {
