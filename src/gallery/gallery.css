@@ -101,3 +101,25 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
 .g-bigmap p { margin: 0; font: 300 15px 'Excon', sans-serif; }
 .g-bigmap .btn-inline { align-self: flex-start; }
 .look-card .lc-tour { display: flex; gap: 8px; margin-top: 4px; }
+
+/* search */
+.g-search { position: absolute; left: 500px; top: 22px; width: 280px; z-index: 15; }
+.g-search input {
+  width: 100%; height: 40px; padding: 0 14px; background: var(--blue); border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
+  font: 400 19px 'Excon', sans-serif; color: var(--ink); text-transform: lowercase; border-radius: 0; outline: none;
+}
+.g-search input::placeholder { color: var(--ink); opacity: 0.6; }
+.g-search input:focus-visible { outline: 3px solid var(--lilac); outline-offset: 3px; }
+.g-results { margin-top: 10px; background: var(--beige); border: 2px solid var(--ink); box-shadow: var(--shadow); display: flex; flex-direction: column; }
+.g-result { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 14px; border: 0; background: none; text-align: left; cursor: pointer; color: var(--ink); }
+.g-result b { font: 700 18px 'Excon', sans-serif; text-transform: lowercase; }
+.g-result small { margin-left: auto; padding: 1px 8px; background: var(--blue); border: 2px solid var(--ink); font: 400 13px 'Excon', sans-serif; text-transform: lowercase; }
+.g-result[aria-selected='true'] { background: var(--offwhite); outline: 2px solid var(--ink); outline-offset: -2px; }
+.g-none { margin: 0; padding: 10px 14px 4px; font: 300 15px 'Excon', sans-serif; }
+.seen-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--lilac); border: 2px solid var(--ink); flex: none; }
+
+/* teleport: horizontal wobble lines while the camera pans, and a paper wipe for long jumps */
+.g-motion { position: absolute; left: -1600px; top: 0; width: 4480px; height: 832px; pointer-events: none; z-index: 12; animation: motion-lines 300ms ease-in-out both; }
+@keyframes motion-lines { 0% { opacity: 0; translate: 90px 0; } 50% { opacity: 0.9; } 100% { opacity: 0; translate: -90px 0; } }
+.g-paper { position: absolute; left: -1600px; top: -400px; width: 4480px; height: 1632px; background: var(--beige); pointer-events: none; z-index: 13; animation: paper-wipe var(--wipe, 300ms) ease-in-out both; }
+@keyframes paper-wipe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }

@@ -180,7 +180,7 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
 
 // ---- animation: state -> pose, driven per frame ----
 const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const TELEPORT_MS = 350;
+const TELEPORT_MS = 330;
 
 export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
   const [frame, setFrame] = useState({ pose: IDLE, turn: facing as number, erase: state === 'teleport-in' ? 1 : 0, opacity: 1, bunDy: 0 });
@@ -210,8 +210,9 @@ export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
         : IDLE;
       L.pose = lerpPose(L.pose, target, 1 - Math.exp(-dt / (cyc ? 0.03 : 0.07)));
       // turning passes through the three-quarter view, then flips
-      const want = L.state === 'turn' ? 0 : L.facing;
-      const step = dt / 0.24;
+      const front = L.state === 'turn' || L.state.startsWith('teleport'); // the teleport faces the viewer first
+      const want = front ? 0 : L.facing;
+      const step = dt / (front ? 0.1 : 0.24);
       L.turn += Math.max(-step, Math.min(step, want - L.turn));
       // the bun follows the body bob about 1px (2.4 units at gallery size) late
       const dy = hipYOf(L.pose) - HIP_Y;

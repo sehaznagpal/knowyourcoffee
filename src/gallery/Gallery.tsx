@@ -3,11 +3,14 @@ import { frames as framesArt } from '../art-loader';
 import { AnimatedCharacter, type CharacterState } from '../art/character/Character';
 import { LABEL } from '../data/colors';
 import type { Drink } from '../data/drinks';
+import { sketch } from '../art/character/sketch';
+import { markSeen } from './bag';
 import { MapStrip } from './MapView';
+import { SearchBox, type SearchHandle } from './SearchBox';
 import { Foreground, World } from './World';
 import {
-  CHAR_H, CHAR_W, DEAD_ZONE, DOOR_X, FEET_Y, FOREGROUND_PARALLAX, FRAMES, PROXIMITY, START_X, STAGE_W, TEST_DOOR_X, TOUR_X, WALK_SPEED,
-  WORLD_W, recipeLine, type FramePlace, type Room,
+  CHAR_H, CHAR_W, DEAD_ZONE, DOOR_X, FEET_Y, FOREGROUND_PARALLAX, FRAMES, FRAME_PITCH, PROXIMITY, ROOMS, START_X, STAGE_W, TEST_DOOR_X, TOUR_X,
+  WALK_SPEED, WORLD_W, recipeLine, rng, type FramePlace,
 } from './layout';
 
 type Props = { scale: number; entering: boolean; active: boolean; onHome: () => void; onTest: () => void };
@@ -20,6 +23,27 @@ const STRIDE = 60; // about one step; the first-visit hint goes after three
 const POINT_MS = 1100; // she points at a frame on the tour before the card opens
 // the art's root svg says fill="none", which its children inherit, so it moves onto a wrapper group
 const SPRITE = `<g fill="none">${framesArt.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')}</g>`;
+// phase lengths in ms; the sum is a little under 1.1 s so frame timing keeps the whole teleport within it
+const TP = { turn: 85, out: 330, pan: 285, in: 330 };
+const roomOf = (x: number) => ROOMS.findIndex((r) => x >= r.x0 && x < r.x1);
+
+// Horizontal wobble lines that streak across the screen while the camera pans in a teleport (no CSS blur).
+const MOTION_LINES = (() => {
+  const r = rng(11);
+  return Array.from({ length: 16 }, (_, i) => {
+    const y = 70 + r() * 700, x = r() * 3800, len = 300 + r() * 600;
+    return { d: sketch([[x, y], [x + len, y + (r() - 0.5) * 6]], { closed: false, seed: i + 1, jitter: 3, step: 60 }), floor: y > 540 };
+  });
+})();
+function MotionLines() {
+  return (
+    <svg className="g-motion" width="4480" height="832" viewBox="0 0 4480 832" aria-hidden="true">
+      {MOTION_LINES.map((l, i) => <path key={i} d={l.d} fill="none" stroke={l.floor ? '#1e1e1e' : '#f4f0e4'} strokeWidth={3} strokeLinecap="round" />)}
+    </svg>
+  );
+}
+
+type Teleport = { phase: 'turn' | 'out' | 'pan' | 'in' | 'paper'; t0: number; start: number; x: number; frame?: string; fromCx: number; toCx: number; wipe: boolean; jumped: boolean };
 const sameTarget = (a: Target, b: Target) => a === b || (!!a && !!b && a.kind === b.kind && (a.kind !== 'frame' || a.id === (b as { id: string }).id));
 
 function WalkButton({ dir, left, onHold }: { dir: -1 | 1; left: number; onHold: (d: -1 | 0 | 1) => void }) {
@@ -64,11 +88,14 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
   const [cstate, setCstate] = useState<CharacterState>('wave');
   const [facing, setFacing] = useState<1 | -1>(1);
   const [hint, setHint] = useState(true);
+  const [blur, setBlur] = useState(0); // key of the current streak overlay
+  const [paper, setPaper] = useState(0); // key of the current paper wipe
+  const searchRef = useRef<SearchHandle>(null);
 
   const live = useRef({
     x: START_X, cx: START_X, keys: new Set<string>(), hold: 0 as -1 | 0 | 1, walked: 0, face: 1 as 1 | -1,
     waveUntil: performance.now() + 1800, pointUntil: 0, target: null as Target, cstate: 'wave' as CharacterState, hint: true,
-    auto: null as Auto, tour: null as number | null, tourWait: false, openAt: 0, openId: '',
+    tp: null as Teleport | null, auto: null as Auto, tour: null as number | null, tourWait: false, openAt: 0, openId: '',
     viewW, scale, active, modal: false,
   });
   live.current.viewW = viewW;
@@ -89,14 +116,25 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
     setTour(i); setCard(null);
   }, []);
   const startTour = useCallback(() => { setMapOpen(false); goTourStop(0); }, [goTourStop]);
-  const walkTo = useCallback((x: number, then: Auto = null) => { live.current.auto = then ?? { x, then: 'none' }; }, []);
-  const walkToFrame = useCallback((f: FramePlace) => {
+  // Getting somewhere: close by (in view, or within 2 frames) she runs there; far away she teleports (about 1.1 s).
+  const goTo = useCallback((x: number, f?: FramePlace) => {
     const L = live.current;
-    setMapOpen(false);
-    if (Math.abs(L.x - f.x) < 8) setCard(f.drink);
-    else L.auto = { x: f.x, then: 'open', id: f.id };
+    if (L.tp) return;
+    if (L.tour !== null) { L.tour = null; L.tourWait = false; setTour(null); }
+    setMapOpen(false); setCard(null);
+    const dest = clamp(x, 80, WORLD_W - 80);
+    const visible = Math.abs(dest - L.cx) < L.viewW / 2 - 100;
+    if (visible || Math.abs(dest - L.x) <= 2 * FRAME_PITCH) {
+      if (f && Math.abs(L.x - dest) < 8) { const now = performance.now(); L.pointUntil = now + 220; L.openAt = now + 220; L.openId = f.id; }
+      else L.auto = { x: dest, then: f ? 'open' : 'none', id: f?.id };
+      return;
+    }
+    const now = performance.now();
+    const rm = reduced();
+    L.tp = { phase: rm ? 'paper' : 'turn', t0: now, start: now, x: dest, frame: f?.id, fromCx: L.cx, toCx: 0, wipe: Math.abs(roomOf(dest) - roomOf(L.x)) > 3, jumped: false };
+    if (rm) setPaper((k) => k + 1);
   }, []);
-  const pickRoom = useCallback((r: Room) => { setMapOpen(false); walkTo(r.enter); }, [walkTo]);
+  const walkToFrame = useCallback((f: FramePlace) => goTo(f.x, f), [goTo]);
   const look = useCallback(() => {
     const t = live.current.target;
     if (t?.kind === 'frame') setCard(FRAMES.find((f) => f.id === t.id)!.drink);
@@ -110,6 +148,8 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
     const L = live.current;
     const onKey = (e: KeyboardEvent) => {
       if (!L.active) return;
+      if ((e.target as Element).closest?.('input')) return; // typing in the search box
+      if (e.key === '/' && !L.modal) { e.preventDefault(); searchRef.current?.focus(); return; }
       if (e.key === 'Escape') {
         if (L.tour !== null) endTour();
         setCard(null); setMapOpen(false);
@@ -145,17 +185,41 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const held = L.keys.has('ArrowLeft') || L.keys.has('KeyA') ? -1 : L.keys.has('ArrowRight') || L.keys.has('KeyD') ? 1 : L.hold;
-      let dir: -1 | 0 | 1 = L.modal || !L.active ? 0 : held;
+      const hv = L.viewW / 2;
+      let dir: -1 | 0 | 1 = L.modal || !L.active || L.tp ? 0 : held;
       let run = L.keys.has('ShiftLeft') || L.keys.has('ShiftRight');
 
       // walking by hand cancels an automatic walk (and the tour); otherwise she walks herself at run speed
+      // teleport: turn (100 ms), erase feet to head (350), camera pan or paper wipe (300), redraw head to feet (350)
+      let tpCam = false;
+      const T = L.tp;
+      if (T) {
+        const e = now - T.t0;
+        if (T.phase === 'turn' && e >= TP.turn) { T.phase = 'out'; T.t0 = now; }
+        else if (T.phase === 'out' && e >= TP.out) {
+          T.phase = 'pan'; T.t0 = now; L.x = T.x; T.fromCx = L.cx; T.toCx = clamp(T.x, hv, WORLD_W - hv);
+          if (T.wipe) setPaper((k) => k + 1); else setBlur((k) => k + 1);
+        } else if (T.phase === 'pan') {
+          const f = clamp(e / TP.pan, 0, 1), ease = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+          if (T.wipe) { if (!T.jumped && f >= 0.5) { L.cx = T.toCx; T.jumped = true; } } else L.cx = T.fromCx + (T.toCx - T.fromCx) * ease;
+          if (e >= TP.pan) { L.cx = T.toCx; T.phase = 'in'; T.t0 = now; L.face = 1; }
+        } else if (T.phase === 'paper' && !T.jumped && e >= 100) { L.x = T.x; L.cx = clamp(T.x, hv, WORLD_W - hv); T.jumped = true; }
+        const done = (T.phase === 'in' && e >= TP.in) || (T.phase === 'paper' && e >= 200);
+        if (done) {
+          L.tp = null;
+          rootEl.current!.dataset.tpMs = String(Math.round(now - T.start));
+          if (T.frame) { L.pointUntil = now + 200; L.openAt = now + 200; L.openId = T.frame; }
+        }
+        tpCam = T.phase === 'pan' || T.phase === 'paper';
+      }
+
       if (L.auto && dir) { if (L.tour !== null) { L.tour = null; L.tourWait = false; setTour(null); } L.auto = null; }
       if (L.auto && !L.modal && L.active) {
         const dx = L.auto.x - L.x;
         if (Math.abs(dx) < 6) {
           const a = L.auto;
           L.x = a.x; L.auto = null;
-          if (a.then === 'open') { L.openAt = now + 220; L.openId = a.id!; }
+          if (a.then === 'open') { L.openAt = now + 220; L.pointUntil = now + 220; L.openId = a.id!; }
           if (a.then === 'tour') { L.pointUntil = now + POINT_MS; L.tourWait = true; }
         } else { dir = dx > 0 ? 1 : -1; run = true; }
       }
@@ -173,10 +237,10 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
       }
 
       // camera: dead zone, then smooth catch-up (about 150 ms); reduced motion jumps
-      const hv = L.viewW / 2, dz = (L.viewW * DEAD_ZONE) / 2;
+      const dz = (L.viewW * DEAD_ZONE) / 2;
       const off = L.x - L.cx;
       const goal = off > dz ? L.x - dz : off < -dz ? L.x + dz : L.cx;
-      L.cx = clamp(reduced() ? goal : L.cx + (goal - L.cx) * (1 - Math.exp(-dt / 0.05)), hv, WORLD_W - hv);
+      if (!tpCam) L.cx = clamp(reduced() ? goal : L.cx + (goal - L.cx) * (1 - Math.exp(-dt / 0.05)), hv, WORLD_W - hv);
 
       worldEl.current!.style.transform = `translate3d(${STAGE_W / 2 - L.cx}px,0,0)`;
       fgEl.current!.style.transform = `translate3d(${STAGE_W / 2 - L.cx * FOREGROUND_PARALLAX}px,0,0)`;
@@ -195,19 +259,23 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
       if (!sameTarget(L.target, t)) { L.target = t; setTarget(t); }
 
       // her pose
+      const tpState: CharacterState | null = !L.tp || L.tp.phase === 'paper' ? null : L.tp.phase === 'turn' ? 'turn' : L.tp.phase === 'in' ? 'teleport-in' : 'teleport-out';
       const next: CharacterState =
-        now < L.waveUntil && !dir ? 'wave'
+        tpState ? tpState
+        : now < L.waveUntil && !dir ? 'wave'
         : now < L.pointUntil && !dir ? 'point'
         : L.modal ? 'look'
         : dir ? (run ? 'run' : 'walk')
         : L.target ? 'look' : 'idle';
       if (next !== L.cstate) { L.cstate = next; setCstate(next); }
-      if (dir && L.face !== facingNow) { facingNow = L.face; setFacing(L.face); }
+      if ((dir || L.tp) && L.face !== facingNow) { facingNow = L.face; setFacing(L.face); }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, []);
+
+  useEffect(() => { if (card) markSeen(card.id); }, [card]);
 
   // after a card closes, put focus back on the frame it came from
   const prevCard = useRef<Drink | null>(null);
@@ -236,6 +304,7 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
       <div ref={fgEl} className="g-world g-fg"><Foreground /></div>
 
       <button type="button" className="wordmark g-wordmark" style={{ left: viewLeft + 60 }} onClick={onHome}>know your coffee</button>
+      <SearchBox ref={searchRef} onPick={(d) => { const f = FRAMES.find((q) => q.id === d.id)!; goTo(f.x, f); }} />
       <button type="button" className="g-mini" style={{ left: viewLeft + viewW - 20 - miniW - 24 }} aria-label="Open the map (M)" onClick={() => setMapOpen(true)}>
         <MapStrip width={miniW} boxHeight={14} labelSize={10} />
       </button>
@@ -245,11 +314,14 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
       <WalkButton dir={1} left={viewLeft + viewW - 24 - 56} onHold={onHold} />
       <button type="button" className="btn test-btn g-test" onClick={onTest}>test what you learned</button>
 
+      {blur ? <MotionLines key={`b${blur}`} /> : null}
+      {paper ? <div key={`p${paper}`} className="g-paper" style={{ '--wipe': reduced() ? '200ms' : '300ms' } as React.CSSProperties} /> : null}
+
       {mapOpen ? (
         <div className="g-bigmap" role="dialog" aria-label="Map of the gallery">
           <h2>map</h2>
           <p>click a room or a frame and she walks there</p>
-          <MapStrip width={860} boxHeight={72} labelSize={14} onRoom={pickRoom} onFrame={walkToFrame} />
+          <MapStrip width={860} boxHeight={72} labelSize={14} onRoom={(r) => goTo(r.enter)} onFrame={walkToFrame} />
           <button type="button" className="btn-inline" autoFocus onClick={() => setMapOpen(false)}>close</button>
         </div>
       ) : null}
