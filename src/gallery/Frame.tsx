@@ -31,6 +31,34 @@ export function FrameArt({ f }: { f: FramePlace }) {
   );
 }
 
+export const CARD_PIC = { w: 216, h: 266 }; // every card front uses this one frame size
+
+/** The card-front picture: the same frame size on every card (blue and paper mats still alternate), with the vessel scaled to fit a box
+ *  about 70% of the frame's inner area, centred. Only the cards do this; the gallery walls keep each frame's own size. */
+export function CardArt({ f }: { f: FramePlace }) {
+  const art = FRAME_ART[f.kind];
+  const v = VESSEL_SIZE[f.drink.vessel];
+  const g = geom(f.drink.vessel);
+  const total = f.drink.layers.reduce((a, l) => a + l.parts, 0);
+  const b = bands(f.drink.layers, total, g);
+  const uid = useId().replace(/:/g, '');
+  const sx = CARD_PIC.w / art.crop[2], sy = CARD_PIC.h / art.crop[3];
+  const k = Math.min((0.7 * art.inner.w * sx) / v.w, (0.7 * art.inner.h * sy) / v.h);
+  return (
+    <>
+      <svg className="gframe-art" width={CARD_PIC.w} height={CARD_PIC.h} viewBox={`${art.crop[0]} ${art.crop[1]} ${art.crop[2]} ${art.crop[3]}`} preserveAspectRatio="none" aria-hidden="true">
+        <use href="#frames-art" width="294" height="204" />
+        <rect x={art.cover.x + art.crop[0]} y={art.cover.y + art.crop[1]} width={art.cover.w} height={art.cover.h} fill={art.cover.fill} />
+      </svg>
+      <div className="gvessel" style={{ left: art.inner.cx * sx - v.w / 2, top: art.inner.cy * sy - v.h / 2, width: v.w, height: v.h, transform: `scale(${k})`, transformOrigin: '50% 50%', '--vh': `${v.h}px` } as React.CSSProperties}>
+        <div className="gv-art" dangerouslySetInnerHTML={{ __html: vessels[f.drink.vessel] }} />
+        <Liquid geom={g} bands={b} blended={f.drink.blended} crema={f.drink.crema} microfoam={f.drink.microfoam} clipId={`card-${f.id}-${uid}`} />
+        {f.drink.vessel === '01' ? <div className="gv-art" dangerouslySetInnerHTML={{ __html: ribs() }} /> : null}
+      </div>
+    </>
+  );
+}
+
 type Props = { f: FramePlace; active: boolean; onOpen: (f: FramePlace) => void };
 
 /** One coffee on the wall: the picture and a placard under it. */

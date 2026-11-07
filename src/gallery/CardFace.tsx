@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { COLOR, LABEL } from '../data/colors';
 import { DRINKS, type Drink } from '../data/drinks';
 import { isFloater } from '../logic/layers';
-import { FrameArt } from './Frame';
+import { CARD_PIC, CardArt } from './Frame';
 import { placeFor, recipeLine } from './layout';
 
 export const CARD_W = 320;
@@ -16,8 +16,8 @@ export function CardFront({ drink, mastered }: { drink: Drink; mastered: boolean
     <div className="cf">
       <span className="cf-tag">{drink.category}</span>
       {mastered ? <span className="cf-stamp">NAILED IT</span> : null}
-      <div className="cf-pic" style={{ width: f.w, height: f.h }}><FrameArt f={f} /></div>
-      <h2 className="cf-name" style={{ fontSize: drink.name.length > 12 ? 31 : 40 }}>{drink.name.toLowerCase()}</h2>
+      <div className="cf-pic" style={{ width: CARD_PIC.w, height: CARD_PIC.h }}><CardArt f={f} /></div>
+      <h2 className="cf-name">{drink.name.toLowerCase()}</h2>
       <p className="cf-recipe">{recipeLine(drink, (i) => LABEL[i])}</p>
     </div>
   );
