@@ -8,12 +8,13 @@ import {
 type Props = {
   activeId: string | null;
   near: 'door' | 'tour' | 'testdoor' | null;
+  tourAt: number | null; // a saved tour stop, so the sign can offer to continue
   onOpen: (f: FramePlace) => void;
   onTour: () => void;
 };
 
 /** Everything that hangs on the wall or lies on the floor, at 1x parallax. Positions are world x, stage y. */
-export function World({ activeId, near, onOpen, onTour }: Props) {
+export function World({ activeId, near, tourAt, onOpen, onTour }: Props) {
   return (
     <>
       <Floor />
@@ -33,9 +34,9 @@ export function World({ activeId, near, onOpen, onTour }: Props) {
       </At>
       <At x={TOUR_X - 110} y={288} className={`g-tour${near === 'tour' ? ' is-active' : ''}`}>
         <button type="button" className="g-tour-sign" onClick={onTour} aria-label="Take the tour: a guided walk past all 18 coffees">
-          <b>take the tour</b><span>a guided walk, 18 stops</span>
+          <b>{tourAt ? 'continue the tour' : 'take the tour'}</b><span>{tourAt ? `stop ${tourAt + 1} of 18` : 'a guided walk, 18 stops'}</span>
         </button>
-        {near === 'tour' ? <i className="look-hint">↑ start the tour</i> : null}
+        {near === 'tour' ? <i className="look-hint">{tourAt ? '↑ continue the tour' : '↑ start the tour'}</i> : null}
       </At>
       <At x={TOUR_X - 115} y={FLOOR_Y - 90}><Bench /></At>
       <At x={DIRECTORY_X} y={96}><Directory /></At>

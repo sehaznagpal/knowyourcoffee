@@ -101,3 +101,7 @@ export function rng(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/** The wall frame (kind, size) for a drink; cards and the bag reuse it so a card front matches the picture on the wall. */
+export const placeFor = (drink: Drink): FramePlace => FRAMES.find((f) => f.id === drink.id)!;
+export const frameIndex = (drink: Drink) => FRAMES.findIndex((f) => f.id === drink.id);

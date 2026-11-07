@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { frames as framesArt } from '../art-loader';
 import { AnimatedCharacter, type CharacterState } from '../art/character/Character';
-import { LABEL } from '../data/colors';
 import type { Drink } from '../data/drinks';
 import { sketch } from '../art/character/sketch';
-import { markSeen } from './bag';
+import { clearSeenAndTour, getTourAt, markSeen, seenIds, setTourAt } from './saved';
+import { BagButton, BagPanel, type BagState } from './Bag';
+import { CoffeeCard } from './CoffeeCard';
+import { loadProgress, resetProgress } from '../logic/storage';
 import { MapStrip } from './MapView';
 import { SearchBox, type SearchHandle } from './SearchBox';
 import { Foreground, World } from './World';
 import {
   CHAR_H, CHAR_W, DEAD_ZONE, DOOR_X, FEET_Y, FOREGROUND_PARALLAX, FRAMES, FRAME_PITCH, PROXIMITY, ROOMS, START_X, STAGE_W, TEST_DOOR_X, TOUR_X,
-  WALK_SPEED, WORLD_W, recipeLine, rng, type FramePlace,
+  WALK_SPEED, WORLD_W, frameIndex, placeFor, rng, type FramePlace,
 } from './layout';
 
 type Props = { scale: number; entering: boolean; active: boolean; onHome: () => void; onTest: () => void };
 type Target = { kind: 'frame'; id: string } | { kind: 'door' } | { kind: 'tour' } | { kind: 'testdoor' } | null;
-type Auto = { x: number; then: 'open' | 'tour' | 'none'; id?: string } | null;
+type Auto = { x: number; then: 'open' | 'tour' | 'point' | 'none'; id?: string } | null;
 
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -43,7 +45,7 @@ function MotionLines() {
   );
 }
 
-type Teleport = { phase: 'turn' | 'out' | 'pan' | 'in' | 'paper'; t0: number; start: number; x: number; frame?: string; fromCx: number; toCx: number; wipe: boolean; jumped: boolean };
+type Teleport = { phase: 'turn' | 'out' | 'pan' | 'in' | 'paper'; t0: number; start: number; x: number; frame?: string; point?: boolean; fromCx: number; toCx: number; wipe: boolean; jumped: boolean };
 const sameTarget = (a: Target, b: Target) => a === b || (!!a && !!b && a.kind === b.kind && (a.kind !== 'frame' || a.id === (b as { id: string }).id));
 
 function WalkButton({ dir, left, onHold }: { dir: -1 | 1; left: number; onHold: (d: -1 | 0 | 1) => void }) {
@@ -85,6 +87,10 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
   const [card, setCard] = useState<Drink | null>(null);
   const [tour, setTour] = useState<number | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+  const [bagOpen, setBagOpen] = useState(false);
+  const [, setVer] = useState(0);
+  const [tourSaved, setTourSaved] = useState<number | null>(getTourAt());
+  const fromBag = useRef(false);
   const [cstate, setCstate] = useState<CharacterState>('wave');
   const [facing, setFacing] = useState<1 | -1>(1);
   const [hint, setHint] = useState(true);
@@ -96,12 +102,14 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
     x: START_X, cx: START_X, keys: new Set<string>(), hold: 0 as -1 | 0 | 1, walked: 0, face: 1 as 1 | -1,
     waveUntil: performance.now() + 1800, pointUntil: 0, target: null as Target, cstate: 'wave' as CharacterState, hint: true,
     tp: null as Teleport | null, auto: null as Auto, tour: null as number | null, tourWait: false, openAt: 0, openId: '',
-    viewW, scale, active, modal: false,
+    viewW, scale, active, modal: false, bag: false, card: false, mapOpen: false,
   });
   live.current.viewW = viewW;
   live.current.scale = scale;
   live.current.active = active;
-  live.current.modal = !!card || mapOpen;
+  live.current.modal = !!card || mapOpen || bagOpen;
+  live.current.bag = bagOpen; live.current.card = !!card; live.current.mapOpen = mapOpen;
+  const bagState: BagState = { seen: new Set(seenIds()), mastered: new Set(loadProgress().built) };
 
   // ---- actions ----
   const endTour = useCallback(() => {
@@ -109,29 +117,35 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
     L.tour = null; L.tourWait = false; L.auto = null;
     setTour(null); setCard(null);
   }, []);
+  const finishTour = useCallback(() => { setTourAt(null); setTourSaved(null); endTour(); }, [endTour]);
   const goTourStop = useCallback((i: number) => {
     const L = live.current;
     L.tour = i; L.tourWait = false;
     L.auto = { x: FRAMES[i].x, then: 'tour' };
+    setTourAt(i); setTourSaved(i);
     setTour(i); setCard(null);
   }, []);
-  const startTour = useCallback(() => { setMapOpen(false); goTourStop(0); }, [goTourStop]);
+  const startTour = useCallback(() => {
+    setMapOpen(false); setBagOpen(false);
+    const at = getTourAt();
+    goTourStop(at !== null && at >= 0 && at < FRAMES.length ? at : 0);
+  }, [goTourStop]);
   // Getting somewhere: close by (in view, or within 2 frames) she runs there; far away she teleports (about 1.1 s).
-  const goTo = useCallback((x: number, f?: FramePlace) => {
+  const goTo = useCallback((x: number, f?: FramePlace, openCard = true) => {
     const L = live.current;
     if (L.tp) return;
     if (L.tour !== null) { L.tour = null; L.tourWait = false; setTour(null); }
-    setMapOpen(false); setCard(null);
+    setMapOpen(false); setBagOpen(false); setCard(null); fromBag.current = false;
     const dest = clamp(x, 80, WORLD_W - 80);
     const visible = Math.abs(dest - L.cx) < L.viewW / 2 - 100;
     if (visible || Math.abs(dest - L.x) <= 2 * FRAME_PITCH) {
-      if (f && Math.abs(L.x - dest) < 8) { const now = performance.now(); L.pointUntil = now + 220; L.openAt = now + 220; L.openId = f.id; }
-      else L.auto = { x: dest, then: f ? 'open' : 'none', id: f?.id };
+      if (f && Math.abs(L.x - dest) < 8) { const now = performance.now(); L.pointUntil = now + (openCard ? 220 : 700); if (openCard) { L.openAt = now + 220; L.openId = f.id; } }
+      else L.auto = { x: dest, then: f ? (openCard ? 'open' : 'point') : 'none', id: f?.id };
       return;
     }
     const now = performance.now();
     const rm = reduced();
-    L.tp = { phase: rm ? 'paper' : 'turn', t0: now, start: now, x: dest, frame: f?.id, fromCx: L.cx, toCx: 0, wipe: Math.abs(roomOf(dest) - roomOf(L.x)) > 3, jumped: false };
+    L.tp = { phase: rm ? 'paper' : 'turn', t0: now, start: now, x: dest, frame: openCard ? f?.id : undefined, point: !!f && !openCard, fromCx: L.cx, toCx: 0, wipe: Math.abs(roomOf(dest) - roomOf(L.x)) > 3, jumped: false };
     if (rm) setPaper((k) => k + 1);
   }, []);
   const walkToFrame = useCallback((f: FramePlace) => goTo(f.x, f), [goTo]);
@@ -152,10 +166,11 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
       if (e.key === '/' && !L.modal) { e.preventDefault(); searchRef.current?.focus(); return; }
       if (e.key === 'Escape') {
         if (L.tour !== null) endTour();
-        setCard(null); setMapOpen(false);
+        setCard(null); setMapOpen(false); setBagOpen(false);
         return;
       }
-      if (e.code === 'KeyM' && !e.repeat) { setMapOpen((o) => !o); return; }
+      if (e.code === 'KeyM' && !e.repeat && !L.bag) { setMapOpen((o) => !o); return; }
+      if (e.code === 'KeyB' && !e.repeat && !L.card && !L.mapOpen) { setBagOpen((o) => !o); return; }
       if (L.modal) return;
       const k = e.code;
       if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD', 'ShiftLeft', 'ShiftRight'].includes(k)) {
@@ -209,6 +224,7 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
           L.tp = null;
           rootEl.current!.dataset.tpMs = String(Math.round(now - T.start));
           if (T.frame) { L.pointUntil = now + 200; L.openAt = now + 200; L.openId = T.frame; }
+          else if (T.point) L.pointUntil = now + 700;
         }
         tpCam = T.phase === 'pan' || T.phase === 'paper';
       }
@@ -221,6 +237,7 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
           L.x = a.x; L.auto = null;
           if (a.then === 'open') { L.openAt = now + 220; L.pointUntil = now + 220; L.openId = a.id!; }
           if (a.then === 'tour') { L.pointUntil = now + POINT_MS; L.tourWait = true; }
+          if (a.then === 'point') L.pointUntil = now + 700;
         } else { dir = dx > 0 ? 1 : -1; run = true; }
       }
       if (L.openId && now >= L.openAt) { const f = FRAMES.find((q) => q.id === L.openId); L.openId = ''; if (f) setCard(f.drink); }
@@ -275,17 +292,19 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  useEffect(() => { if (card) markSeen(card.id); }, [card]);
+  useEffect(() => { if (card && markSeen(card.id)) setVer((v) => v + 1); }, [card]);
 
   // after a card closes, put focus back on the frame it came from
   const prevCard = useRef<Drink | null>(null);
   useEffect(() => {
-    if (prevCard.current && !card) document.querySelector<HTMLElement>(`.gframe[data-id="${prevCard.current.id}"]`)?.focus();
+    if (prevCard.current && !card) {
+      if (fromBag.current) { fromBag.current = false; setBagOpen(true); }
+      else document.querySelector<HTMLElement>(`.gframe[data-id="${prevCard.current.id}"]`)?.focus();
+    }
     prevCard.current = card;
   }, [card]);
 
   const onHold = (d: -1 | 0 | 1) => { live.current.hold = d; };
-  const recipe = card ? recipeLine(card, (i) => LABEL[i]) : '';
   const near = target && target.kind !== 'frame' ? target.kind : null;
   const miniW = 300;
 
@@ -296,7 +315,7 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
       </svg>
 
       <div ref={worldEl} className="g-world">
-        <World activeId={target?.kind === 'frame' ? target.id : null} near={near} onOpen={walkToFrame} onTour={startTour} />
+        <World activeId={target?.kind === 'frame' ? target.id : null} near={near} tourAt={tourSaved} onOpen={walkToFrame} onTour={startTour} />
         <div ref={charEl} className="g-char" style={{ top: FEET_Y - CHAR_H, width: CHAR_W, height: CHAR_H }}>
           <AnimatedCharacter state={cstate} facing={facing} height={CHAR_H} />
         </div>
@@ -326,22 +345,25 @@ export function Gallery({ scale, entering, active, onHome, onTest }: Props) {
         </div>
       ) : null}
 
+      <BagButton state={bagState} left={viewLeft + 24} onClick={() => setBagOpen(true)} />
+      {bagOpen ? (
+        <BagPanel
+          state={bagState}
+          onClose={() => setBagOpen(false)}
+          onOpen={(d) => { fromBag.current = true; setBagOpen(false); setCard(d); }}
+          onReset={() => { resetProgress(); clearSeenAndTour(); setTourSaved(null); setVer((v) => v + 1); }}
+        />
+      ) : null}
       {card ? (
-        <div className="look-card" role="dialog" aria-label={`${card.name}: ${recipe}`}>
-          <p className="lc-note">{tour !== null ? `tour · ${tour + 1} of ${FRAMES.length}` : 'card coming in a later stage'}</p>
-          <h2>{card.name}</h2>
-          <span className="lc-cat">{card.category}</span>
-          <p className="lc-recipe">{recipe}</p>
-          <p className="lc-tip">{card.tip}</p>
-          {tour !== null ? (
-            <div className="lc-tour">
-              {tour + 1 < FRAMES.length ? <button type="button" className="btn-primary" autoFocus onClick={() => goTourStop(tour + 1)}>NEXT</button> : null}
-              <button type="button" className="btn-inline" autoFocus={tour + 1 >= FRAMES.length} onClick={endTour}>{tour + 1 < FRAMES.length ? 'end tour' : 'finish'}</button>
-            </div>
-          ) : (
-            <button type="button" className="btn-inline" autoFocus onClick={() => setCard(null)}>close</button>
-          )}
-        </div>
+        <CoffeeCard
+          drink={card}
+          mastered={bagState.mastered.has(card.id)}
+          tour={tour !== null ? { i: tour, total: FRAMES.length, onNext: () => goTourStop(tour + 1), onEnd: tour + 1 < FRAMES.length ? endTour : finishTour } : null}
+          onClose={tour !== null ? endTour : () => setCard(null)}
+          onNav={(d) => setCard(FRAMES[(frameIndex(card) + d + FRAMES.length) % FRAMES.length].drink)}
+          onJump={(id) => { const f = FRAMES.find((q) => q.id === id)!; goTo(f.x, f); }}
+          onShow={() => { const f = placeFor(card); goTo(f.x, f, false); }}
+        />
       ) : null}
     </div>
   );

@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import type { Drink } from '../data/drinks';
-import { isSeen } from './bag';
+import { isSeen } from './saved';
 import { closest, search } from './search';
 
 export type SearchHandle = { focus: () => void };
