@@ -40,8 +40,8 @@ export const CUFF_L = { x: 52, y: 416.947, w: 57, h: 67.0531, r: 8 };
 export const SHOULDER_R: Pt = [212, 226];
 export const R_IDLE = 82.25; // pose angle of the free arm at rest
 export const ARM_R_LEN = 214;
-export const TUBE_R = 'M-19 0L-17 150L-20 206Q-20 214 -12 214L12 214Q20 214 20 206L17 150L19 0A19 19 0 0 0 -19 0Z';
-export const SEAM_R = 'M-9 40C-8 100 -8 160 -9 206';
+export const TUBE_R = 'M-24 0L-22 150L-25 206Q-25 214 -17 214L17 214Q25 214 25 206L22 150L24 0A24 24 0 0 0 -24 0Z';
+export const SEAM_R = 'M-12 60C-11 110 -11 160 -12 206';
 
 const rad = (d: number) => (d * Math.PI) / 180;
 /** Rotate a point about a pivot (screen degrees, clockwise positive). */

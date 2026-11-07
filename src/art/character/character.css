@@ -4,10 +4,10 @@
 
 /* idle life: breathing (2.4 s loop), blink every ~4 s, the loose hair strands sway a little */
 .char .breath { animation: breathe 2.4s ease-in-out infinite; }
-.char .eyes { transform-box: fill-box; transform-origin: center; animation: blink 4.2s infinite; }
+.char .eyes { transform-box: fill-box; transform-origin: center; animation: blink 4s infinite; }
 .char .strand { animation: strand 2.8s ease-in-out infinite alternate; }
 @keyframes breathe { 50% { translate: 0 -1.5px; } }
-@keyframes blink { 0%, 93%, 100% { scale: 1 1; } 95.5% { scale: 1 0.1; } }
+@keyframes blink { 0%, 92%, 100% { scale: 1 1; } 95% { scale: 1 0.08; } }
 @keyframes strand { from { rotate: -3deg; } to { rotate: 3deg; } }
 
 /* teleport: --erase 0..1 drives every outline. Parts with a small --k (feet) erase first; counting --erase back down redraws the head first. */

@@ -48,11 +48,7 @@ const Defs = memo(function Defs() {
       <clipPath id="sv2-notch-L"><polygon points={`105,${ty} ${tx},${ty} ${bx},${by} 105,${by}`} /></clipPath>
       <clipPath id="sv2-notch-R"><polygon points={`${tx},${ty} 250,${ty} 250,${by} ${bx},${by}`} /></clipPath>
       <clipPath id="sv2-below"><rect x="-50" y="244" width="500" height="600" /></clipPath>
-      {/* the left jacket has an armhole where the sleeve hangs, 4 wider all round so the sleeve's white rim shows through */}
-      <mask id="sv2-hole" maskUnits="userSpaceOnUse" x="-50" y="-50" width="500" height="900">
-        <rect x="-50" y="-50" width="500" height="900" fill="white" />
-        <path d={TUBE_L} fill="black" stroke="black" strokeWidth={8} clipPath="url(#sv2-below)" />
-      </mask>
+      <clipPath id="sv2-shoulder"><rect x="-50" y="150" width="500" height="104" /></clipPath>
     </defs>
   );
 });
@@ -118,8 +114,20 @@ const JacketR = memo(function JacketR() {
   );
 });
 
+// The shoulders of both jackets drawn again over the top of the arms, so every arm's shoulder end is tucked under the jacket at any angle.
+const ShoulderCaps = memo(function ShoulderCaps() {
+  return (
+    <Inside>
+      <g clipPath="url(#sv2-shoulder)">
+        <path d={V.JACKETR} fill={JACKET} />
+        <path d={V.JACKETL} fill={JACKET} />
+      </g>
+    </Inside>
+  );
+});
+
 const JacketL = memo(function JacketL() {
-  return <g id="jacket-left" style={k(0.5)}><O d={V.JACKETL} fill={JACKET} mask="url(#sv2-hole)" /></g>;
+  return <g id="jacket-left" style={k(0.5)}><O d={V.JACKETL} fill={JACKET} /></g>;
 });
 
 // Free arm (screen right): sleeve and hand pivot at the shoulder, which hides under the jacket.
@@ -137,6 +145,7 @@ const FreeArm = memo(function FreeArm({ angle, flip, hand }: { angle: number; fl
           <O d={handPath(hand)} fill={PAPER} />
         </g>
       )}
+      <O d={TUBE_R} stroke={PAPER} w={8} deco />
       <O d={TUBE_R} fill={JACKET} />
       <Inside><path className="o" pathLength={1} d={SEAM_R} fill="none" stroke={INK} strokeWidth={4} strokeLinecap="round" /></Inside>
     </g>
@@ -179,6 +188,7 @@ const Bag = memo(function Bag({ transform }: { transform: string }) {
 // The head: face, ear hole, earring, eyes and blush are the Figma v2 parts as drawn; turning slides the features across the face.
 const Head = memo(function Head({ tilt, turn }: { tilt: number; turn: number }) {
   const dx = (turn - 1) * 22, de = (turn - 1) * 8;
+  const blink = useRef({ dur: 3 + Math.random() * 2, delay: -Math.random() * 3 }).current; // each blink comes every 3 to 5 s
   return (
     <g className="head" transform={`rotate(${tilt} ${CX} ${NECK_Y})`} style={k(0.85)}>
       <g id="head"><O d={V.FACE} fill={PAPER} /></g>
@@ -189,7 +199,7 @@ const Head = memo(function Head({ tilt, turn }: { tilt: number; turn: number }) 
             <circle className="o" cx={100.334} cy={170} r={8.5} fill={BLUE} stroke={INK} />
           </g>
           <g transform={`translate(${dx} 0)`}>
-            <g className="eyes">
+            <g className="eyes" style={{ animationDuration: `${blink.dur}s`, animationDelay: `${blink.delay}s` }}>
               <ellipse className="o" cx={196} cy={107} rx={5} ry={11} fill={INK} />
               <ellipse className="o" cx={162} cy={107} rx={5} ry={11} fill={INK} />
             </g>
@@ -247,14 +257,20 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
 
   // Arms: absolute angles (0 = right, 90 = down) become one rotation about the shoulder
   const aR = armAngle(pose.armR), aL = armAngle(pose.armL);
-  const thetaL = Math.round((aL - L_IDLE) * 10) / 10;
+  const thetaL = Math.round(Math.max(-40, Math.min(40, aL - L_IDLE)) * 10) / 10; // the bag arm only swings a little, so the bag stays in its hand
   const handFlipR = Math.sin(rad(aR)) > 0.4;
   const grip = rotAbout(GRIP_L, SHOULDER_L, thetaL);
   const bagAngle = Math.round(Math.max(-35, Math.min(35, -0.45 * thetaL)) * 10) / 10;
   const bagT = `translate(${grip[0].toFixed(1)} ${grip[1].toFixed(1)}) rotate(${bagAngle}) translate(${-GRIP_L[0]} ${-GRIP_L[1]})`;
 
-  const vb = (viewBox ?? `0 0 ${CHAR_W} ${CHAR_H}`).split(' ').map(Number);
-  const edge = height && typeof height === 'number' ? (edgePx * vb[3]) / height : 0;
+  // The viewBox has room all round for every pose (arm raised, bubble), and negative margins keep the layout size at the figure's own box,
+  // so nothing is ever cut off at the figure's edge.
+  const PAD = { x: 180, t: 130, b: 12 };
+  const padded = !viewBox && typeof height === 'number';
+  const vb = (viewBox ?? (padded ? `${-PAD.x} ${-PAD.t} ${CHAR_W + 2 * PAD.x} ${CHAR_H + PAD.t + PAD.b}` : `0 0 ${CHAR_W} ${CHAR_H}`)).split(' ').map(Number);
+  const unit = padded ? CHAR_H : vb[3]; // character units shown over `height`
+  const px = padded ? height / CHAR_H : 1; // screen px per character unit
+  const edge = height && typeof height === 'number' ? (edgePx * unit) / height : 0;
   const tilt = Math.round(pose.tilt * 10) / 10;
   const figure = () => (
     <g transform={`translate(${CX} 0) scale(${sx} 1) translate(${-CX} 0)`}>
@@ -264,12 +280,13 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
         <g className="breath">
           <HairBack tilt={tilt} dy={Math.round(bunDy * 10) / 10} />
           <Torso />
-          <FreeArm angle={Math.round(aR * 10) / 10} flip={handFlipR} hand={pose.handR} />
           <JacketR />
+          <JacketL />
           <Bag transform={bagT} />
           <BagHand theta={thetaL} />
+          <FreeArm angle={Math.round(aR * 10) / 10} flip={handFlipR} hand={pose.handR} />
           <BagSleeve theta={thetaL} />
-          <JacketL />
+          <ShoulderCaps />
           <Head tilt={tilt} turn={Math.round(t * 50) / 50} />
         </g>
       </g>
@@ -281,7 +298,7 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edg
       className={`char${className ? ' ' + className : ''}`}
       data-erasing={erase > 0.001 ? '' : undefined}
       viewBox={vb.join(' ')}
-      style={{ height, width: 'auto', aspectRatio: `${vb[2]} / ${vb[3]}`, '--erase': erase } as CSSProperties}
+      style={{ height: padded ? vb[3] * px : height, width: 'auto', aspectRatio: `${vb[2]} / ${vb[3]}`, ...(padded ? { margin: `${-PAD.t * px}px ${-PAD.x * px}px ${-PAD.b * px}px` } : {}), '--erase': erase } as CSSProperties}
       role="img"
       aria-label="Sehaz, the gallery guide"
     >
