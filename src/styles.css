@@ -260,3 +260,12 @@ body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-s
 
 
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* landing: the A-frame sign, and Sehaz on the pavement */
+.landing-sign {
+  position: absolute; left: 319px; top: 512px; width: 92px; height: 150px; margin: 0; display: flex; align-items: center; justify-content: center; text-align: center;
+  font: 400 8.5px/1.25 'Excon', sans-serif; color: var(--ink); pointer-events: none;
+}
+.landing-char { position: absolute; pointer-events: none; transition-property: left, opacity; transition-timing-function: linear; }
+.landing-char.is-in { opacity: 0; transition: opacity 200ms ease-out; }
+.landing.zooming .landing-sign { animation: fade-out 250ms ease-out forwards; }
