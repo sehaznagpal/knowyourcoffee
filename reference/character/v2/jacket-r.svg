@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="107.365" height="297" viewBox="0 0 107.365 297" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="jacket R">
+<use xlink:href="#stroke0_0_4" fill="#4C4C4C"/>
+<mask id="stroke1_0_4" fill="white">
+<use xlink:href="#stroke0_0_4"/>
+</mask>
+<path d="M98.5247 293.088C131.832 277.732 61.6595 68.2078 42.5558 13.1668C39.7891 5.19545 32.2999 0 23.8621 0H20.0002C8.70946 0 -0.343048 9.34013 0.00998618 20.6254L7.8785 272.153C7.8785 272.153 64.4698 308.789 98.5247 293.088Z" stroke-width="8" stroke="#F7F5F1" mask="url(#stroke1_0_4)"/>
+</g>
+<defs>
+<path id="stroke0_0_4" d="M0.00998616 20.6254C-0.343048 9.34013 8.70946 0 20.0002 0H23.8621C32.2999 0 39.7891 5.19545 42.5558 13.1668C61.6595 68.2078 131.832 277.732 98.5247 293.088C64.4698 308.789 7.8785 272.153 7.8785 272.153L0.00998616 20.6254Z"/>
+</defs>
+</svg>

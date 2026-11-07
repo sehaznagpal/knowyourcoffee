@@ -15,7 +15,7 @@ export type Pose = {
 };
 
 export const IDLE: Pose = {
-  legL: { a: 9 }, legR: { a: -2 },
+  legL: { a: 1.5 }, legR: { a: -1.5 },
   armL: { a1: 99, a2: 98 }, armR: { a1: 79, a2: 84 },
   lean: -1, shiftX: 5, tilt: 2, flareR: 16, handR: 'mitten',
 };

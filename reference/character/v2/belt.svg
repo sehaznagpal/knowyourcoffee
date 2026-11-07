@@ -1,0 +1,13 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="168.972" height="116.137" viewBox="0 0 168.972 116.137" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="belt">
+<use xlink:href="#stroke0_0_4" fill="#8FE5FF"/>
+<mask id="stroke1_0_4" maskUnits="userSpaceOnUse" x="-0.930241" y="0" width="170" height="117" fill="black">
+<rect fill="white" x="-0.930241" width="170" height="117"/>
+<use xlink:href="#stroke0_0_4"/>
+</mask>
+<path d="M164.07 112L145.774 20.0951C143.911 10.7384 135.699 4 126.159 4H46.2442C37.0396 4 29.0235 10.2824 26.8237 19.2202L5.06976 107.608L164.07 112Z" stroke-width="8" stroke="#121212" mask="url(#stroke1_0_4)"/>
+</g>
+<defs>
+<path id="stroke0_0_4" d="M26.8237 19.2202C29.0235 10.2824 37.0396 4 46.2442 4H126.159C135.699 4 143.911 10.7384 145.774 20.0951L164.07 112L5.06976 107.608L26.8237 19.2202Z"/>
+</defs>
+</svg>

@@ -1,0 +1,13 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="167.969" height="217.244" viewBox="0 0 167.969 217.244" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="shirt">
+<use xlink:href="#stroke0_0_4" fill="#CEB5CB"/>
+<mask id="stroke1_0_4" maskUnits="userSpaceOnUse" x="-0.488995" y="0" width="169" height="218" fill="black">
+<rect fill="white" x="-0.488995" width="169" height="218"/>
+<use xlink:href="#stroke0_0_4"/>
+</mask>
+<path d="M163.511 213L143.858 21.9534C142.809 11.7539 134.216 4 123.963 4H47.6285C37.5584 4 29.0588 11.487 27.7883 21.4767L4.511 204.5L163.511 213Z" stroke-width="8" stroke="#121212" mask="url(#stroke1_0_4)"/>
+</g>
+<defs>
+<path id="stroke0_0_4" d="M27.7883 21.4767C29.0588 11.487 37.5584 4 47.6285 4H123.963C134.216 4 142.809 11.7539 143.858 21.9534L163.511 213L4.511 204.5L27.7883 21.4767Z"/>
+</defs>
+</svg>

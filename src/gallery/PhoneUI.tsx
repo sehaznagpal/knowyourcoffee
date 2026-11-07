@@ -10,7 +10,7 @@ type Props = {
   lookLabel: string;
   onLook: () => void;
   onHold: (d: -1 | 0 | 1, run?: boolean) => void;
-  onHome: () => void;
+  onBack: () => void;
   onMap: () => void;
   onBag: () => void;
   onTest: () => void;
@@ -40,7 +40,7 @@ export const PhoneUI = forwardRef<SearchHandle, Props>(function PhoneUI(p, ref) 
   return createPortal(
     <div className="ph" role="presentation">
       <div className="ph-top">
-        <button type="button" className="wordmark ph-wordmark" onClick={p.onHome}>know your coffee</button>
+        {p.inRoom ? <button type="button" className="ph-back" onClick={p.onBack}>← back to the gallery</button> : <span />}
         <div className="ph-top-right">
           {!p.inRoom ? (
             <>
@@ -52,7 +52,9 @@ export const PhoneUI = forwardRef<SearchHandle, Props>(function PhoneUI(p, ref) 
               </button>
             </>
           ) : null}
-          <button type="button" className="ph-bag" aria-label={`Open the bag: ${p.bagText}`} onClick={p.onBag}>{p.bagText}</button>
+          <button type="button" className="ph-icon ph-bag" aria-label={`Open the bag: ${p.bagText}`} onClick={p.onBag}>
+            <svg width="26" height="26" viewBox="0 0 30 28" fill="none" aria-hidden="true"><path d="M9 10C9 3 21 3 21 10" stroke="#1e1e1e" strokeWidth="3" strokeLinecap="round" /><path d="M3 10h24l2 15H1Z" fill="#1e1e1e" stroke="#1e1e1e" strokeWidth="3" strokeLinejoin="round" /></svg>
+          </button>
           {!p.inRoom ? <button type="button" className="ph-test" onClick={p.onTest}>test</button> : null}
         </div>
       </div>

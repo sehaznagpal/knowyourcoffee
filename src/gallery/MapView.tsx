@@ -51,14 +51,3 @@ export function MapStrip({ width, boxHeight, onRoom, onFrame, className, labelSi
     </div>
   );
 }
-
-/** The same map, drawn large on the lobby wall as a directory board. */
-export function Directory() {
-  return (
-    <div className="directory" role="img" aria-label="Directory: lobby, then the shots, water, drip, milk and cold and sweet wings, then the testing room">
-      <b>directory</b>
-      <MapStrip width={300} boxHeight={34} labelSize={12} />
-      <small><i className="map-dot-key" /> you are here · {FRAMES.length} coffees</small>
-    </div>
-  );
-}

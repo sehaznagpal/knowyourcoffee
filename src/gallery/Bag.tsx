@@ -11,14 +11,14 @@ const FILTERS = ['all', 'seen', 'mastered', 'still to learn'] as const;
 type Filter = (typeof FILTERS)[number];
 const THUMB = 0.3; // thumbnails are the card fronts scaled down
 
-export function BagButton({ state, left, onClick }: { state: BagState; left: number; onClick: () => void }) {
+/** A round lilac button, the size and style of the arrow buttons, with a black bag on it. The counts are inside the bag. */
+export function BagButton({ state, left, onClick, className = 'arrow-btn g-bag' }: { state: BagState; left?: number; onClick: () => void; className?: string }) {
   return (
-    <button type="button" className="g-bag" style={{ left }} onClick={onClick} aria-label={`Open the bag (B): ${bagCount(state)} of ${DRINKS.length} cards`}>
-      <svg width="30" height="28" viewBox="0 0 30 28" fill="none" aria-hidden="true">
+    <button type="button" className={className} style={left === undefined ? undefined : { left }} onClick={onClick} aria-label={`Open the bag (B): ${bagCount(state)} of ${DRINKS.length} cards`}>
+      <svg width="28" height="28" viewBox="0 0 30 28" fill="none" aria-hidden="true">
         <path d="M9 10C9 3 21 3 21 10" stroke="#1e1e1e" strokeWidth="3" strokeLinecap="round" />
-        <path d="M3 10h24l2 15H1Z" fill="#c9b6cb" stroke="#1e1e1e" strokeWidth="3" strokeLinejoin="round" />
+        <path d="M3 10h24l2 15H1Z" fill="#1e1e1e" stroke="#1e1e1e" strokeWidth="3" strokeLinejoin="round" />
       </svg>
-      <span>{bagCount(state)} / {DRINKS.length}</span>
     </button>
   );
 }

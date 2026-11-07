@@ -55,7 +55,6 @@ export function Frame({ f, active, onOpen }: Props) {
         <b>{f.drink.name}</b>
         <span>{f.drink.category}</span>
         <span>{recipe}</span>
-        {active ? <i className="look-hint">↑ look closer</i> : null}
       </div>
     </>
   );
