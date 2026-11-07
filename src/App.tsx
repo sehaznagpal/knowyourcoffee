@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Landing } from './components/Landing';
 import { Table } from './components/Table';
+import { Gallery } from './gallery/Gallery';
+import { FLOOR_Y } from './gallery/layout';
+import './gallery/gallery.css';
 import { TestModal } from './components/TestModal';
 
 const FRAME = { w: 1280, h: 832 };
@@ -27,10 +30,12 @@ const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)'
 export default function App() {
   const params = new URLSearchParams(window.location.search);
   const staticMode = params.get('static') === '1';
-  const [phase, setPhase] = useState<Phase>(params.get('screen') === 'table' || params.get('test') === '1' ? 'table' : 'landing');
+  // the walkable gallery is the world now; ?screen=table still opens the old table for the pixel diff
+  const world: 'gallery' | 'table' = params.get('screen') === 'table' ? 'table' : 'gallery';
+  const [phase, setPhase] = useState<Phase>(params.get('screen') === 'table' || params.get('screen') === 'gallery' || params.get('test') === '1' ? 'table' : 'landing');
   const [entering, setEntering] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
-  const [isTestOpen, setIsTestOpen] = useState(params.get('test') === '1');
+  const [isTestOpen, setIsTestOpen] = useState(params.get('test') === '1' && world === 'table'); // in the gallery, ?test=1 starts inside the testing room
   const scale = useStageScale();
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
@@ -58,7 +63,9 @@ export default function App() {
   };
 
   const onTable = phase === 'table' || phase === 'leaving';
-  const split = (window.innerHeight - FRAME.h * scale) / 2 + 465 * scale;
+  const stageTop = (window.innerHeight - FRAME.h * scale) / 2;
+  const stageLeft = (window.innerWidth - FRAME.w * scale) / 2;
+  const split = stageTop + (world === 'gallery' ? FLOOR_Y : 465) * scale;
 
   // black circle growing from the door centre to cover the whole screen
   const cx = (window.innerWidth - FRAME.w * scale) / 2 + DOOR_CENTER.x * scale;
@@ -68,15 +75,19 @@ export default function App() {
 
   return (
     <div
-      className={`viewport screen-${onTable ? 'table' : 'landing'}`}
-      style={{ '--split': `${split}px`, '--s': scale } as React.CSSProperties}
+      className={`viewport screen-${onTable ? world : 'landing'}`}
+      style={{ '--split': `${split}px`, '--s': scale, '--sl': `${stageLeft}px`, '--st': `${stageTop}px` } as React.CSSProperties}
     >
       <div
         className={`stage${phase === 'leaving' ? ' leaving' : ''}${fadeIn ? ' fade-in' : ''}${entering ? ' reveal' : ''}`}
         style={{ width: FRAME.w, height: FRAME.h, transform: `translate(-50%, -50%) scale(${scale})` }}
       >
         {onTable ? (
-          <Table scale={scale} entering={entering} active={phase === 'table' && !isTestOpen} onHome={goHome} onTest={() => setIsTestOpen(true)} />
+          world === 'gallery' ? (
+            <Gallery scale={scale} entering={entering} active={phase === 'table' && !isTestOpen} onHome={goHome} onTest={() => setIsTestOpen(true)} />
+          ) : (
+            <Table scale={scale} entering={entering} active={phase === 'table' && !isTestOpen} onHome={goHome} onTest={() => setIsTestOpen(true)} />
+          )
         ) : (
           <Landing onStart={start} zooming={phase === 'zoom'} />
         )}

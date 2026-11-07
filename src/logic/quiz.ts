@@ -81,7 +81,10 @@ export class Deck {
   private last = '';
   private retries: { id: string; due: number }[] = [];
 
-  constructor(private rand: () => number = Math.random) {}
+  /** `pool`: only these drink ids are asked (default: all 18). */
+  constructor(private rand: () => number = Math.random, private pool?: string[]) {}
+
+  get size() { return this.pool?.length ?? DRINKS.length; }
 
   next(): Drink {
     this.asked++;
@@ -90,7 +93,8 @@ export class Deck {
     if (dueIdx >= 0) id = this.retries.splice(dueIdx, 1)[0].id;
     else {
       if (!this.bag.length) this.refill();
-      id = this.bag.pop()!;
+      // a small pool can be all retries that are not due yet: ask the earliest one now
+      id = this.bag.length ? this.bag.pop()! : this.retries.length ? this.retries.shift()!.id : (this.pool ?? DRINKS.map((d) => d.id))[0];
     }
     this.last = id;
     return DRINKS.find((d) => d.id === id)!;
@@ -102,7 +106,7 @@ export class Deck {
 
   private refill() {
     const waiting = new Set(this.retries.map((r) => r.id));
-    const ids = DRINKS.map((d) => d.id).filter((i) => !waiting.has(i));
+    const ids = (this.pool ?? DRINKS.map((d) => d.id)).filter((i) => !waiting.has(i));
     for (let i = ids.length - 1; i > 0; i--) {
       const j = Math.floor(this.rand() * (i + 1));
       [ids[i], ids[j]] = [ids[j], ids[i]];
