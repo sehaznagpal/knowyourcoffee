@@ -10,6 +10,7 @@ export const bagCount = (s: BagState) => DRINKS.filter((d) => inBag(s, d.id)).le
 
 const FILTERS = ['all', 'seen', 'mastered', 'still to learn'] as const;
 type Filter = (typeof FILTERS)[number];
+const GRID_H = 3 * 109 + 2 * 8; // the grid's height; the big card is scaled to match it exactly
 const THUMB = 76 / CARD_W; // thumbnails are the card fronts scaled down
 const CAT_COLOR: Record<Category, string> = { shots: '#3B2314', 'with water': '#8FE5FF', 'with drip': '#7A4A2E', 'with milk': '#C9B6CB', 'cold & sweet': '#FF6F82' };
 
@@ -78,13 +79,15 @@ export function BagPanel({ state, onShow, onClose, onReset, compact }: { state: 
 
         <div className="bag-body">
           <div className="bag-left">
-            <div className={`cc bag-big${flipped && curOpen ? ' is-flipped' : ''}`} style={{ width: CARD_W, height: CARD_H }} onClick={() => curOpen && setFlipped((f) => !f)}>
+            <div className="bag-bigwrap" style={{ width: Math.round(CARD_W * GRID_H / CARD_H), height: GRID_H }}>
+            <div className={`cc bag-big${flipped && curOpen ? ' is-flipped' : ''}`} style={{ width: CARD_W, height: CARD_H, transform: `scale(${GRID_H / CARD_H})` }} onClick={() => curOpen && setFlipped((f) => !f)}>
               <div className="cc-flip">
                 <div className="cc-face cc-front">
                   {curOpen ? <CardFront drink={cur} mastered={state.mastered.has(cur.id)} /> : <span className="bag-down bag-down-big"><b>?</b><small>not seen yet</small></span>}
                 </div>
                 <div className="cc-face cc-back">{curOpen ? <CardBack drink={cur} onJump={(id) => { setSel(id); setFlipped(false); }} /> : null}</div>
               </div>
+            </div>
             </div>
             <div className="cc-bar bag-bar">
               <button type="button" className="arrow-btn bag-step" aria-label="Previous coffee" onClick={() => go(-1)}>
@@ -114,9 +117,9 @@ export function BagPanel({ state, onShow, onClose, onReset, compact }: { state: 
                 );
               })}
             </div>
-            <button type="button" className="bag-reset" onClick={() => (sure ? (onReset(), setSure(false)) : setSure(true))} onBlur={() => setSure(false)}>
+            <div className="bag-rbar"><button type="button" className="bag-reset" onClick={() => (sure ? (onReset(), setSure(false)) : setSure(true))} onBlur={() => setSure(false)}>
               {sure ? 'click again to reset' : 'reset progress'}
-            </button>
+            </button></div>
           </div>
         </div>
       </div>

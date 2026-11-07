@@ -6,7 +6,7 @@ export const walkthroughSeen = () => { try { return localStorage.getItem(KEY) ==
 const markSeen = () => { try { localStorage.setItem(KEY, '1'); } catch { /* private mode */ } };
 
 const STEPS = [
-  { key: 'her', text: 'this is you. use ← → or the arrows to walk.' },
+  { key: 'her', text: 'this is you. use ← → or the arrows to walk. hold shift to run.', touch: 'this is you. use ← → or the arrows to walk. double-tap and hold an arrow to run.' },
   { key: 'frame', text: 'every coffee hangs here. walk up and press ↑ to look closer.' },
   { key: 'search', text: "know what you want? search and she'll take you there." },
   { key: 'map', text: 'where you are in the gallery. tap a room to jump to it.' },
@@ -30,7 +30,7 @@ function find(key: string): Box | null {
 }
 
 /** The first-visit tour: the screen dims, a rounded spotlight shows one thing at a time, a note sits beside it. */
-export function Walkthrough({ onClose, onStep }: { onClose: () => void; onStep: (i: number) => void }) {
+export function Walkthrough({ onClose, onStep, touch }: { onClose: () => void; onStep: (i: number) => void; touch: boolean }) {
   const [i, setI] = useState(0);
   const [box, setBox] = useState<Box | null>(null);
   const noteEl = useRef<HTMLDivElement>(null);
@@ -91,7 +91,7 @@ export function Walkthrough({ onClose, onStep }: { onClose: () => void; onStep: 
       {sp ? <div className="wt-spot" style={{ left: sp.x, top: sp.y, width: sp.w, height: sp.h, transition: t }} /> : <div className="wt-dim" />}
       <div ref={noteEl} className="wt-note" style={{ left: note.left, top: note.top, width: NOTE_W, transition: reduced() ? 'none' : 'left 250ms ease, top 250ms ease' }}>
         {side ? <i className={`wt-arrow wt-arrow-${side}`} style={side === 'top' || side === 'bottom' ? { left: Math.max(18, Math.min(NOTE_W - 18, arrow)) } : { top: Math.max(18, Math.min(noteH - 18, arrow)) }} /> : null}
-        <p>{step.text}</p>
+        <p>{touch && 'touch' in step ? step.touch : step.text}</p>
         <div className="wt-foot">
           <span className="wt-dots">{i + 1} / {STEPS.length}</span>
           <button type="button" className="wt-skip" onClick={close}>skip</button>

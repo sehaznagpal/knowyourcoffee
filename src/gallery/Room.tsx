@@ -22,8 +22,13 @@ const MODES: { id: Mode; label: string }[] = [{ id: 'mix', label: 'mix' }, { id:
 
 const ROW1: Ingredient[] = [...SHELF[0].items, ...SHELF[1].items, ...SHELF[3].items]; // coffee, water, sweet
 const ROW2: Ingredient[] = SHELF[2].items; // dairy
-const CAPTIONS = [
-  { row: 0, at: 0, text: 'coffee' }, { row: 0, at: 2, text: 'water' }, { row: 0, at: 5, text: 'sweet' }, { row: 1, at: 0, text: 'dairy' },
+// Hanging boards over the jars: each is centred over its own jars, at the height the plain words used to sit
+const jarX = (i: number) => SHELF_X + i * PITCH + 50; // centre of jar i
+const SIGNS = [
+  { text: 'coffee', x: (jarX(0) + jarX(1)) / 2, y: 16 }, // espresso, drip coffee
+  { text: 'water', x: jarX(3), y: 16 }, // hot water, cold water, ice
+  { text: 'sweet', x: jarX(5), y: 16 }, // chocolate syrup
+  { text: 'dairy', x: SHELF_X - 30, y: ROW_TOP[1] + 62, left: true }, // left of the second row, centred on it
 ];
 
 function JarArt({ ing }: { ing: Ingredient }) {
@@ -207,8 +212,8 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
       {ROW_TOP.map((t, r) => (
         <div key={r} className="shelf-board" style={{ left: SHELF_X - 16, top: t + 74, width: (r === 0 ? ROW1.length : ROW2.length) * PITCH + 4 }} />
       ))}
-      {CAPTIONS.map((c) => (
-        <span key={c.text} className="shelf-cap" style={c.row === 0 ? { left: SHELF_X + c.at * PITCH, top: 26 } : { left: SHELF_X - 70, top: ROW_TOP[1] + 34 }}>{c.text}</span>
+      {SIGNS.map((c) => (
+        <span key={c.text} className={`shelf-sign${c.left ? ' is-left' : ''}`} style={{ left: c.x, top: c.y }}>{c.text}</span>
       ))}
       {ROW1.map((ing, i) => jar(ing, i, 0))}
       {ROW2.map((ing, i) => jar(ing, i, 1))}

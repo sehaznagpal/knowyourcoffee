@@ -61,7 +61,8 @@ function WalkButton({ dir, left, onHold }: { dir: -1 | 1; left: number; onHold: 
       type="button"
       className="arrow-btn walk-btn"
       style={{ left, top: 748 }}
-      aria-label={dir < 0 ? 'Walk left (hold)' : 'Walk right (hold)'}
+      title="walk · shift to run"
+      aria-label={dir < 0 ? 'Walk left (hold; shift to run)' : 'Walk right (hold; shift to run)'}
       onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); onHold(dir); }}
       onPointerUp={() => onHold(0)}
       onPointerCancel={() => onHold(0)}
@@ -421,7 +422,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
           <MapStrip width={miniW} boxHeight={14} labelSize={10} />
         </button>
       ) : null}
-      {hint && !card && !mapOpen && !inRoom ? <p className="g-hint">{compact ? 'hold ← → to walk' : 'use ← → to walk around'}</p> : null}
+      {hint && !card && !mapOpen && !inRoom ? <p className="g-hint">{compact ? 'hold an arrow to walk · double-tap and hold to run' : '← → to walk · hold shift to run'}</p> : null}
 
       {!inRoom && !compact ? (
         <>
@@ -466,7 +467,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
           onPick={(d) => { const f = FRAMES.find((q) => q.id === d.id)!; goTo(f.x, f); }}
         />
       ) : null}
-      {help ? <Walkthrough onClose={closeHelp} onStep={helpStep} /> : null}
+      {help ? <Walkthrough onClose={closeHelp} onStep={helpStep} touch={compact} /> : null}
       {bagOpen ? (
         <BagPanel
           state={bagState}
