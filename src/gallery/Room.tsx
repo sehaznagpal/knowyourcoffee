@@ -13,7 +13,7 @@ import { FLOOR_Y } from './layout';
 
 export const COUNTER_TOP = 590;
 const GLASS_W = 219, GLASS_H = 306;
-const SHELF_X = 420, PITCH = 118;
+const SHELF_X = 236, PITCH = 118; // the shelf sits clear of the back button (left) and the mini-map (right)
 const ROW_TOP = [50, 160];
 const INK = '#1e1e1e', PAPER = '#f7f5f1';
 
@@ -47,12 +47,11 @@ type Props = {
   onMood: (m: 'order' | 'cheer' | 'idle') => void;
   onCheer: () => void;
   onAnswered: () => void;
-  onLeave: () => void;
   compact: boolean; // phone landscape: the controls move to a fixed bar in real pixels
 };
 
 /** The testing room: a barista studio. She orders, you pour from the jars on the shelf into the glass, serve it, and get checked. */
-export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, onLeave, compact }: Props) {
+export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compact }: Props) {
   const [mode, setMode] = useState<Mode>('mix');
   const [progress, setProgress] = useState<Progress>(loadProgress);
   const deck = useRef<Deck | null>(null);
@@ -181,9 +180,6 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, onLeav
   const statsEl = (
       <p className="room-stats">{stats}</p>
   );
-  const backEl = (
-      <button type="button" className="room-back" onClick={onLeave}>back to the gallery</button>
-  );
   const resultEl = (
     <>
       {result && drink ? (
@@ -232,8 +228,8 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, onLeav
         {result?.ok ? <span className="room-stamp">NAILED IT</span> : null}
       </div>
 
-      {!compact ? <>{tabsEl}{buttonsEl}{statsEl}{backEl}{resultEl}</> : null}
-      {compact ? createPortal(<div className="ph-room">{bubbleEl}{resultEl}<div className="ph-room-bar">{tabsEl}<div className="ph-room-row">{buttonsEl}</div><div className="ph-room-foot">{statsEl}{backEl}</div></div></div>, document.body) : null}
+      {!compact ? <>{tabsEl}{buttonsEl}{statsEl}{resultEl}</> : null}
+      {compact ? createPortal(<div className="ph-room">{bubbleEl}{resultEl}<div className="ph-room-bar">{tabsEl}<div className="ph-room-row">{buttonsEl}</div><div className="ph-room-foot">{statsEl}</div></div></div>, document.body) : null}
 
       {fly ? (
         <div ref={flyEl} className="fly-card" style={{ width: CARD_W, height: CARD_H }} aria-hidden="true">

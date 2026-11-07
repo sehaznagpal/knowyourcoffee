@@ -7,7 +7,7 @@ export const STAGE_H = 832;
 export const FLOOR_Y = 540; // wall above, floor below
 export const FEET_Y = 710; // her feet
 export const CHAR_H = 316; // 38% of the stage height
-export const CHAR_W = Math.round((CHAR_H * 316) / 768);
+export const CHAR_W = Math.round((CHAR_H * 309) / 772);
 export const WALK_SPEED = 320; // stage px/s: about 360 px/s on a 1440 px wide window
 export const PROXIMITY = 120;
 export const DEAD_ZONE = 0.1; // she can move 10% of the screen before the camera follows
@@ -20,7 +20,8 @@ export const FRAME_ART = {
   paper: { crop: [169, 50, 125, 154], inner: { cx: 62, cy: 77, w: 106, h: 134 }, cover: { x: 25, y: 43, w: 76, h: 75, fill: '#f7f5f1' }, maxH: 270 },
 } as const;
 const BASE_SCALE: Record<VesselId, number> = { '01': 1.6, '02': 1.45, '03': 1.35 };
-export const FRAME_BOTTOM = 290; // frames hang with their lower edge about here; placards sit under them
+export const TOP_BAND = 80; // the search and the mini-map live above this line (stage px); nothing else is drawn under them
+export const FRAME_TOP_MIN = TOP_BAND + 24; // frames hang with their top edge at least 24px below the top bar; placards sit under them
 
 export type FramePlace = {
   id: string;
@@ -41,7 +42,7 @@ function place(drink: Drink, x: number, i: number): FramePlace {
   const w = art.crop[2] * s, h = art.crop[3] * s;
   const dy = [-6, 8, -10, 4, -2, 10, -8, 2][i % 8]; // hung by hand
   const rot = [-0.7, 0.6, 0.3, -0.5, 0.8, -0.3, 0.5, -0.8][i % 8];
-  return { id: drink.id, drink, x, kind, s, w, h, top: FRAME_BOTTOM - h + dy, rot };
+  return { id: drink.id, drink, x, kind, s, w, h, top: FRAME_TOP_MIN + dy + 10, rot };
 }
 
 // ---- layout, left to right. Stage 1 builds the lobby and the with-milk wing; the other wings slot in between later. ----
@@ -74,11 +75,10 @@ export const FRAMES: FramePlace[] = WINGS.flatMap((w) => w.frames);
 
 // lobby fixtures
 export const DOOR_X = 190; // entrance, back to the landing
-export const START_X = 470;
-export const TOUR_X = 610; // "take the tour" sign
-export const DIRECTORY_X = 880; // the map, drawn on the wall
+export const START_X = DOOR_X + 130; // she starts in front of the entrance, one door-width to its right
+export const TOUR_X = 760; // "take the tour" sign
 export const TEST_DOOR_X = WORLD_W - 190; // the testing room door at the end of the corridor
-export const LAMPS = [700, ...WINGS.map((w) => w.frames[0].x + 192)];
+export const LAMPS = [1010, ...WINGS.map((w) => w.frames[0].x + 192)];
 
 export type Room = { id: string; label: string; x0: number; x1: number; enter: number };
 const SHORT: Record<Category, string> = { shots: 'shots', 'with water': 'water', 'with drip': 'drip', 'with milk': 'milk', 'cold & sweet': 'sweet' };

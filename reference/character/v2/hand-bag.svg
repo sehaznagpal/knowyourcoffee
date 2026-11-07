@@ -1,0 +1,10 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="43" height="67" viewBox="0 0 43 67" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="hand">
+<ellipse cx="21.5" cy="33.5" rx="17.5" ry="29.5" fill="#F7F5F1"/>
+<mask id="stroke0_0_4" maskUnits="userSpaceOnUse" x="0" y="0" width="43" height="67" fill="black">
+<rect fill="white" width="43" height="67"/>
+<path d="M39 33.5C39 49.7924 31.165 63 21.5 63C11.835 63 4 49.7924 4 33.5C4 17.2076 11.835 4 21.5 4C31.165 4 39 17.2076 39 33.5Z"/>
+</mask>
+<ellipse cx="21.5" cy="33.5" rx="17.5" ry="29.5" stroke-width="8" stroke="#121212" mask="url(#stroke0_0_4)"/>
+</g>
+</svg>

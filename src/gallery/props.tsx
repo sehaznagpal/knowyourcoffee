@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { sketch, type Pt } from '../art/character/sketch';
-import { WORLD_W, FLOOR_Y, rng } from './layout';
+import { WORLD_W, FLOOR_Y, FRAME_TOP_MIN, rng } from './layout';
 
 const INK = '#1e1e1e', PAPER = '#f7f5f1', BEIGE = '#f4f0e4';
 type Shape = { d: string; fill?: string; stroke?: string; w?: number };
@@ -48,10 +48,12 @@ export function Bench() {
   );
 }
 
+// A pendant lamp that hangs from a bracket just below the top band, so nothing is drawn under the search or the map.
 export function Lamp({ drop = 90 }: { drop?: number }) {
   return (
     <Art width={100} height={drop + 10} shapes={[
-      { d: open([[50, -400], [50, drop - 44]], 41, 200), w: 3 },
+      { d: closed([[40, FRAME_TOP_MIN - 4], [60, FRAME_TOP_MIN - 4], [60, FRAME_TOP_MIN + 4], [40, FRAME_TOP_MIN + 4]], 43, 30), fill: INK, w: 3 },
+      { d: open([[50, FRAME_TOP_MIN], [50, drop - 44]], 41, 200), w: 3 },
       { d: closed([[8, drop], [92, drop], [70, drop - 44], [30, drop - 44]], 42), fill: PAPER },
     ]} />
   );
@@ -69,7 +71,9 @@ export function Door() {
 }
 
 export function Arch() {
-  const ring: Pt[] = [[0, FLOOR_Y], [0, 150], [10, 100], [40, 62], [120, 44], [200, 62], [230, 100], [240, 150], [240, FLOOR_Y], [196, FLOOR_Y], [196, 170], [180, 122], [120, 104], [60, 122], [44, 170], [44, FLOOR_Y]];
+  // the arch tops out below the top band, so nothing is drawn under the search or the map
+  const top = FRAME_TOP_MIN, k = (FLOOR_Y - top) / (FLOOR_Y - 44);
+  const ring: Pt[] = ([[0, FLOOR_Y], [0, 150], [10, 100], [40, 62], [120, 44], [200, 62], [230, 100], [240, 150], [240, FLOOR_Y], [196, FLOOR_Y], [196, 170], [180, 122], [120, 104], [60, 122], [44, 170], [44, FLOOR_Y]] as Pt[]).map(([x, y]) => [x, y >= FLOOR_Y ? y : top + (y - 44) * k]);
   return <Art width={240} height={FLOOR_Y} shapes={[{ d: closed(ring, 61, 24), fill: PAPER, w: 6 }]} />;
 }
 
