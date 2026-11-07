@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type CSSProperties } from 'react';
 import './character.css';
 import {
-  BLUE, CHAR_H, CHAR_W, CX, HIP_X, HIP_Y, INK, LEG_LEN, LILAC, NECK_Y, PAPER, SHAPES as S, arm, face, handPath,
+  BEIGE, BLUE, CHAR_H, CHAR_W, CX, HIP_X, HIP_Y, INK, LEG_LEN, LILAC, NECK_Y, PAPER, SHAPES as S, arm, face, handPath,
 } from './geometry';
 import { IDLE, POSES, RUN, WALK, cyclePose, lerpPose, type Pose } from './poses';
 
@@ -12,10 +12,22 @@ const rad = (d: number) => (d * Math.PI) / 180;
 const GROUND = HIP_Y + LEG_LEN + 0; // ankle height when standing straight (706)
 
 type PathProps = { d: string; fill?: string; w?: number; stroke?: string };
+// The sticker edge: the whole figure is drawn once more underneath in beige, every stroke widened by 2x the edge, so the
+// cut-out outline is one even width all the way round.
+const EdgeCtx = createContext(0);
 // Every outline has pathLength 1 so the teleport can erase and redraw it with stroke-dashoffset.
-const O = ({ d, fill = 'none', w = W, stroke = INK }: PathProps) => (
-  <path className="o" pathLength={1} d={d} fill={fill} stroke={stroke} strokeWidth={w} strokeLinejoin="round" strokeLinecap="round" />
-);
+const O = ({ d, fill = 'none', w = W, stroke = INK }: PathProps) => {
+  const e = useContext(EdgeCtx);
+  return (
+    <path
+      className="o" pathLength={1} d={d}
+      fill={e && fill !== 'none' ? BEIGE : fill}
+      stroke={e ? BEIGE : stroke}
+      strokeWidth={e ? w + 2 * e : w}
+      strokeLinejoin="round" strokeLinecap="round"
+    />
+  );
+};
 // Teleport order: 0 = feet, 1 = head
 const k = (v: number) => ({ '--k': v }) as CSSProperties;
 
@@ -24,22 +36,29 @@ type Props = {
   turn?: number; // 1 = facing right, -1 = facing left, 0 = facing us (three-quarter between the two)
   erase?: number; // 0 = fully drawn, 1 = erased (feet first); counting back down redraws head first
   bubble?: string | null; // speech bubble text
-  halo?: boolean; // paper-white edge on the hair so it reads against the black gallery wall
+  edgePx?: number; // width of the beige sticker edge in screen px (needs a numeric height)
+  bunDy?: number; // the bun's follow-through behind the body bob, in character units
   height?: number | string;
   className?: string;
 };
 
+/** Where the hips sit for a pose: the planted foot stays on the floor, the hips drop when the legs spread. */
+export function hipYOf(pose: Pose) {
+  const legs = { L: pose.legL, R: pose.legR };
+  const planted = (['L', 'R'] as const).filter((s) => !legs[s].lift);
+  const ref = (planted.length ? planted : ['L' as const]).reduce((a, b) => (Math.abs(legs[b].a) > Math.abs(legs[a].a) ? b : a));
+  return GROUND - LEG_LEN * Math.cos(rad(legs[ref].a)) + (legs[ref].lift ?? 0);
+}
+
 /** One still of Sehaz. Named groups: hair-back, head, face, earring, jacket, top, tee, trousers, leg-left, leg-right, shoe-left, shoe-right, hand, bag. */
-export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, halo = false, height = 360, className }: Props) {
+export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, edgePx = 3, bunDy = 0, height = 360, className }: Props) {
   const t = Math.abs(turn);
   const sign = turn < 0 ? -1 : 1;
   const sx = sign * (0.88 + 0.12 * t);
 
   // Legs: keep the planted foot on the floor, drop the hips when the legs spread
   const legs = { L: pose.legL, R: pose.legR };
-  const planted = (['L', 'R'] as const).filter((s) => !legs[s].lift);
-  const ref = (planted.length ? planted : ['L' as const]).reduce((a, b) => (Math.abs(legs[b].a) > Math.abs(legs[a].a) ? b : a));
-  const hipY = GROUND - LEG_LEN * Math.cos(rad(legs[ref].a)) + (legs[ref].lift ?? 0);
+  const hipY = hipYOf(pose);
   const legT = (s: 'L' | 'R') => {
     const l = legs[s];
     const rise = hipY + LEG_LEN * Math.cos(rad(l.a)) - GROUND + (l.lift ?? 0);
@@ -54,18 +73,9 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, hal
   const grip: [number, number] = [aL.wrist[0] + 14 * Math.cos(rad(aL.angle)), aL.wrist[1] + 14 * Math.sin(rad(aL.angle))];
   const bagAngle = Math.max(-35, Math.min(35, 0.45 * (90 - aL.angle)));
 
-  return (
-    <svg
-      className={`char${className ? ' ' + className : ''}`}
-      data-erasing={erase > 0.001 ? '' : undefined}
-      viewBox={`0 0 ${CHAR_W} ${CHAR_H}`}
-      style={{ height, width: 'auto', aspectRatio: `${CHAR_W} / ${CHAR_H}`, '--erase': erase } as CSSProperties}
-      role="img"
-      aria-label="Sehaz, the gallery guide"
-    >
-      <g className="flick">{S.flicks.map((d, i) => <path key={i} d={d} fill="none" stroke={INK} strokeWidth={4} strokeLinecap="round" />)}</g>
-
-      <g transform={`translate(${CX} 0) scale(${sx} 1) translate(${-CX} 0)`}>
+  const edge = height && typeof height === 'number' ? (edgePx * CHAR_H) / height : 0;
+  const figure = () => (
+    <g transform={`translate(${CX} 0) scale(${sx} 1) translate(${-CX} 0)`}>
         <g id="leg-right" transform={rt.transform} style={k(0.1)}>
           <O d={S.leg} fill={INK} />
           <O d={S.ankle} fill={PAPER} w={6} />
@@ -86,7 +96,6 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, hal
 
         <g transform={`translate(${pose.shiftX} ${hipY - HIP_Y}) rotate(${pose.lean} ${CX} ${HIP_Y})`}>
           <g className="breath">
-            <g id="hair-back" className="hairback" style={k(1)}><O d={S.hairBack} fill={INK} stroke={halo ? PAPER : INK} /></g>
             <g id="trousers" style={k(0.2)}><O d={S.hips} fill={INK} /></g>
             <g id="tee" style={k(0.35)}><O d={S.tee} fill={BLUE} /></g>
             <g id="top" style={k(0.4)}><O d={S.top} fill={LILAC} /></g>
@@ -94,9 +103,15 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, hal
             <g id="jacket" style={k(0.5)}><O d={S.panelR} fill={PAPER} /><O d={S.panelL} fill={PAPER} /></g>
 
             <g className="head" transform={`rotate(${pose.tilt} ${CX} ${NECK_Y})`} style={k(0.85)}>
-              <g id="head"><O d={S.face} fill={PAPER} /><O d={S.hairCap} fill={INK} stroke={halo ? PAPER : INK} /></g>
+              <g id="head"><O d={S.face} fill={PAPER} /></g>
+              <g id="hair" style={k(1)}>
+                <g className="bun" transform={`translate(0 ${bunDy})`}><O d={S.bun} fill={INK} /></g>
+                <O d={S.cap} fill={INK} />
+                {S.strandsL.map((d, i) => <g key={`l${i}`} className="strand" style={{ transformOrigin: `${[114, 112, 115][i]}px ${[92, 103, 113][i]}px`, animationDelay: `${-i * 0.7}s` }}><O d={d} w={5} /></g>)}
+                {S.strandsR.map((d, i) => <g key={`r${i}`} className="strand" style={{ transformOrigin: `${316 - [114, 112, 115][i]}px ${[92, 103, 113][i]}px`, animationDelay: `${-i * 0.9 - 0.4}s` }}><O d={d} w={5} /></g>)}
+              </g>
               <g id="face">
-                <g className="eyes"><path className="o" d={f.eyeL} fill={INK} /><path className="o" d={f.eyeR} fill={INK} /></g>
+                <g className="eyes"><O d={f.eyeL} fill={INK} w={0} /><O d={f.eyeR} fill={INK} w={0} /></g>
                 <O d={f.nose} w={4} />
                 <O d={f.smile} w={4} />
               </g>
@@ -124,6 +139,21 @@ export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, hal
           </g>
         </g>
       </g>
+  );
+
+  return (
+    <svg
+      className={`char${className ? ' ' + className : ''}`}
+      data-erasing={erase > 0.001 ? '' : undefined}
+      viewBox={`0 0 ${CHAR_W} ${CHAR_H}`}
+      style={{ height, width: 'auto', aspectRatio: `${CHAR_W} / ${CHAR_H}`, '--erase': erase } as CSSProperties}
+      role="img"
+      aria-label="Sehaz, the gallery guide"
+    >
+      <g className="flick">{S.flicks.map((d, i) => <path key={i} d={d} fill="none" stroke={INK} strokeWidth={4} strokeLinecap="round" />)}</g>
+
+      <EdgeCtx.Provider value={edge}>{figure()}</EdgeCtx.Provider>
+      <EdgeCtx.Provider value={0}>{figure()}</EdgeCtx.Provider>
 
       {bubble ? (
         <g className="bubble" transform="translate(206 -96)">
@@ -140,8 +170,8 @@ const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefe
 const TELEPORT_MS = 350;
 
 export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
-  const [frame, setFrame] = useState({ pose: IDLE, turn: facing as number, erase: state === 'teleport-in' ? 1 : 0, opacity: 1 });
-  const live = useRef({ pose: IDLE, turn: facing as number, state, facing, since: performance.now() });
+  const [frame, setFrame] = useState({ pose: IDLE, turn: facing as number, erase: state === 'teleport-in' ? 1 : 0, opacity: 1, bunDy: 0 });
+  const live = useRef({ pose: IDLE, turn: facing as number, state, facing, since: performance.now(), dy: 0, bun: 0 });
   const prevState = useRef(state);
 
   if (prevState.current !== state) {
@@ -170,11 +200,16 @@ export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
       const want = L.state === 'turn' ? 0 : L.facing;
       const step = dt / 0.24;
       L.turn += Math.max(-step, Math.min(step, want - L.turn));
+      // the bun follows the body bob about 1px (2.4 units at gallery size) late
+      const dy = hipYOf(L.pose) - HIP_Y;
+      const vel = (dy - L.dy) / Math.max(dt, 0.001);
+      L.dy = dy;
+      L.bun += (Math.max(-2.4, Math.min(2.4, -vel * 0.012)) - L.bun) * Math.min(1, dt / 0.05);
       let erase = 0, opacity = 1;
       if (L.state === 'teleport-out') { erase = Math.min(1, (age * 1000) / TELEPORT_MS); }
       if (L.state === 'teleport-in') { erase = Math.max(0, 1 - (age * 1000) / TELEPORT_MS); }
       if (reduced() && L.state.startsWith('teleport')) { opacity = L.state === 'teleport-out' ? Math.max(0, 1 - age / 0.2) : Math.min(1, age / 0.2); erase = 0; }
-      setFrame({ pose: L.pose, turn: L.turn, erase, opacity });
+      setFrame({ pose: L.pose, turn: L.turn, erase, opacity, bunDy: reduced() ? 0 : L.bun });
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -184,11 +219,11 @@ export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
   return frame;
 }
 
-export function AnimatedCharacter({ state = 'idle', facing = 1, bubble, halo, height, className }: { state?: CharacterState; facing?: 1 | -1; bubble?: string | null; halo?: boolean; height?: number | string; className?: string }) {
+export function AnimatedCharacter({ state = 'idle', facing = 1, bubble, height, className }: { state?: CharacterState; facing?: 1 | -1; bubble?: string | null; height?: number | string; className?: string }) {
   const m = useCharacterMotion(state, facing);
   return (
     <div style={{ opacity: m.opacity, display: 'inline-block', lineHeight: 0 }}>
-      <Character pose={m.pose} turn={m.turn} erase={m.erase} halo={halo} bubble={state === 'order' ? (bubble ?? 'make me a ___') : null} height={height} className={className} />
+      <Character pose={m.pose} turn={m.turn} erase={m.erase} bunDy={m.bunDy} bubble={state === 'order' ? (bubble ?? 'make me a ___') : null} height={height} className={className} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import styleBun from '../../reference/character/style-bun.png';
 import styleBody from '../../reference/character/style-body.png';
 import styleMain from '../../reference/character/style-main.png';
 import { AnimatedCharacter, Character, type CharacterState } from '../art/character/Character';
@@ -38,11 +39,12 @@ export function CharacterReview() {
   return (
     <main className="review">
       <h1>/dev/character</h1>
-      <p className="lede">Stage 0, second round. Left to right: style-main.png, style-body.png and the new character, all at the same height.</p>
+      <p className="lede">Stage 0, hair round. Left to right: style-main.png, style-body.png, style-bun.png and the new character, all at the same height.</p>
 
       <section className="refs">
         <figure><img src={styleMain} alt="style-main.png" /><figcaption>style-main.png (line, hair, face)</figcaption></figure>
         <figure><img src={styleBody} alt="style-body.png" /><figcaption>style-body.png (proportions, poses)</figcaption></figure>
+        <figure><img src={styleBun} alt="style-bun.png" /><figcaption>style-bun.png (hair)</figcaption></figure>
         <figure><Character pose={POSES.idle} height={420} /><figcaption>new character</figcaption></figure>
       </section>
 
@@ -65,9 +67,9 @@ export function CharacterReview() {
         <div className="room-wall" />
         <div className="room-floor" />
         <div className="room-folk">
-          <AnimatedCharacter state="idle" halo height={316} />
-          <AnimatedCharacter state="walk" halo height={316} />
-          <AnimatedCharacter state="run" halo height={316} />
+          <AnimatedCharacter state="idle" height={316} />
+          <AnimatedCharacter state="walk" height={316} />
+          <AnimatedCharacter state="run" height={316} />
         </div>
       </section>
     </main>

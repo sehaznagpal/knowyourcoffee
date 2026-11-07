@@ -9,6 +9,7 @@ export const INK = '#1e1e1e';
 export const PAPER = '#f7f5f1';
 export const BLUE = '#8fe5ff';
 export const LILAC = '#c9b6cb';
+export const BEIGE = '#f4f0e4';
 
 // Skeleton
 export const HIP_Y = 396; // hip pivot height when standing
@@ -24,26 +25,36 @@ const clean = (pts: Pt[], seed: number, step = 16) => sketch(pts, { seed, jitter
 const smooth = (pts: Pt[], seed: number) => sketch(pts, { seed, jitter: 0.3, step: 200 });
 const mirror = (pts: Pt[]): Pt[] => pts.map(([x, y]) => [2 * CX - x, y]);
 
-// ---- hair: one solid mass, soft waves down both sides, behind the shoulders to mid-back ----
-function hairMass(): Pt[] {
-  const lobe = (y: number) => 0.5 - 0.5 * Math.cos((2 * Math.PI * (y - 130)) / 96);
-  const half = (y: number) => (y < 130 ? 74 + (y - 70) * 0.1 : 78 + 30 * lobe(y));
-  const right: Pt[] = [];
-  for (let y = 70; y <= 430; y += 8) right.push([CX + half(y), y]);
-  const left: Pt[] = right.map(([x, y]) => [2 * CX - x, y] as Pt).reverse();
-  const top: Pt[] = [[CX - 56, 32], [CX - 26, 18], [CX, 14], [CX + 26, 18], [CX + 56, 32]];
-  const bottom: Pt[] = [[CX + 60, 440], [CX, 446], [CX - 60, 440]];
-  return [...top, ...right, ...bottom, ...left];
+// ---- hair: a solid cap on the forehead, a lumpy bun on top, a few loose hooks at the temples. Nothing below the jaw. ----
+const FACE = { cx: CX, cy: 108, rx: 46, ry: 58 };
+// the cap's outer edge runs 5 units outside the face outline so the two share one black line
+const capOuter: Pt[] = [];
+for (let deg = -173; deg <= -7; deg += 14) {
+  const t = (deg * Math.PI) / 180;
+  capOuter.push([FACE.cx + (FACE.rx + 5) * Math.cos(t), FACE.cy + (FACE.ry + 5) * Math.sin(t)]);
 }
-// forehead showing, no bangs: a hairline with a slight side part
-const hairCap: Pt[] = [[108, 112], [110, 84], [124, 62], [146, 51], [162, 49], [182, 54], [200, 68], [210, 90], [212, 112], [236, 86], [226, 40], [190, 8], [128, 8], [92, 40], [84, 86]];
+// hairline, right temple to left: forehead showing, a slight side part (the small dip), no bangs
+const hairline: Pt[] = [[207, 104], [205, 88], [192, 74], [174, 66], [158, 65], [152, 66], [147, 76], [141, 67], [126, 74], [113, 88], [109, 104]];
+const bun: Pt[] = Array.from({ length: 32 }, (_, i) => {
+  const t = (i / 32) * Math.PI * 2;
+  const r = 24.5 + 5.5 * (0.5 - 0.5 * Math.cos(4 * t + 0.6)); // four soft lumps
+  return [CX + r * Math.cos(t), 30 + r * Math.sin(t)] as Pt;
+});
+// short loose hooks just above where the ears would be (left side; the right side mirrors them)
+const strandL: Pt[][] = [
+  [[114, 92], [101, 88], [92, 95], [95, 104]],
+  [[112, 103], [99, 105], [92, 114], [97, 121]],
+  [[115, 113], [105, 118], [102, 126]],
+];
 
 const shoeBase: Pt[] = [[-12, 0], [18, -2], [28, 16], [62, 34], [88, 46], [96, 56], [92, 62], [-26, 62], [-34, 52], [-30, 26]];
 
 export const SHAPES = {
-  hairBack: smooth(hairMass(), 3),
-  hairCap: smooth(hairCap, 4),
-  face: smooth(ellipse(CX, 108, 46, 58, 18), 5),
+  cap: smooth([...capOuter, ...hairline], 3),
+  bun: smooth(bun, 4),
+  strandsL: strandL.map((p, i) => sketch(p, { closed: false, seed: 70 + i, jitter: 0, step: 200 })),
+  strandsR: strandL.map((p, i) => sketch(mirror(p), { closed: false, seed: 74 + i, jitter: 0, step: 200 })),
+  face: smooth(ellipse(FACE.cx, FACE.cy, FACE.rx, FACE.ry, 18), 5),
   neck: clean([[144, 150], [172, 150], [174, 196], [142, 196]], 6),
 
   top: clean([[124, 190], [142, 192], [150, 202], [158, 206], [166, 202], [174, 192], [192, 190], [198, 204], [200, 346], [116, 346], [118, 204]], 7, 14),
