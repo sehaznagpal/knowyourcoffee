@@ -168,7 +168,7 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
       onClick={() => add(ing)}
     >
       <JarArt ing={ing} />
-      <span className="jar-label">{LABEL[ing]}</span>
+      <span className="jar-label">{ing === 'half-and-half' ? <>steamed half-<br />and-half</> : LABEL[ing]}</span>
       {(counts.get(ing) ?? 0) >= 2 ? <span className="chip jar-chip">x{counts.get(ing)}</span> : null}
     </button>
   );
