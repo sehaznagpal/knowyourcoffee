@@ -1,0 +1,19 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="166" height="144" viewBox="0 0 166 144" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="bag">
+<path id="bag_2" d="M47 50.799C78.586 -11.9819 95.9723 -11.2163 126 50.799" stroke-width="8" stroke="#F7F5F1"/>
+<g id="bag_3">
+<use xlink:href="#stroke0_0_4" fill="#CEB5CB"/>
+<mask id="stroke1_0_4" maskUnits="userSpaceOnUse" x="3" y="43.0001" width="162" height="101" fill="black">
+<rect fill="white" x="3" y="43.0001" width="162" height="101"/>
+<use xlink:href="#stroke0_0_4"/>
+</mask>
+<path d="M27.1864 140H140.584C153.533 140 163.068 127.883 160.023 115.297L147.201 62.2971C145.029 53.3219 136.996 47.0001 127.762 47.0001H43.7133C34.961 47.0001 27.2255 52.6909 24.62 61.0463L8.09312 114.046C4.07797 126.922 13.6987 140 27.1864 140Z" stroke-width="8" stroke="#F7F5F1" mask="url(#stroke1_0_4)"/>
+</g>
+<line id="deets" x1="127.736" y1="70.2327" x2="120.233" y2="130.264" stroke-width="4" stroke-linecap="round" stroke="#F7F5F1"/>
+<line id="deets_2" x1="119.951" y1="59.9495" x2="43.9494" y2="58.0495" stroke-width="4" stroke-linecap="round" stroke="#F7F5F1"/>
+<line id="deets_3" x1="146.698" y1="86.6441" x2="132.644" y2="84.3017" stroke-width="4" stroke-linecap="round" stroke="#F7F5F1"/>
+</g>
+<defs>
+<path id="stroke0_0_4" d="M24.62 61.0463C27.2255 52.6909 34.961 47.0001 43.7133 47.0001H127.762C136.996 47.0001 145.029 53.3219 147.201 62.2971L160.023 115.297C163.068 127.883 153.533 140 140.584 140H27.1864C13.6987 140 4.07797 126.922 8.09312 114.046L24.62 61.0463Z"/>
+</defs>
+</svg>

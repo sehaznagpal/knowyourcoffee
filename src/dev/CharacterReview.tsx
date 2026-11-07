@@ -1,8 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import styleBun from '../../reference/character/style-bun.png';
-import styleBunCloseup from '../../reference/character/style-bun-closeup.png';
-import styleBody from '../../reference/character/style-body.png';
-import styleMain from '../../reference/character/style-main.png';
+import v2Original from '../../reference/character/sehaz-v2.svg';
 import { AnimatedCharacter, Character, type CharacterState } from '../art/character/Character';
 import { POSES, RUN, WALK } from '../art/character/poses';
 import './review.css';
@@ -40,20 +37,17 @@ export function CharacterReview() {
   return (
     <main className="review">
       <h1>/dev/character</h1>
-      <p className="lede">Stage 0, head and hair round. Left to right: style-main.png, style-body.png and the new character, all at the same height.</p>
+      <p className="lede">The Figma v2 character. Left: the original export. Right: the rig, at the same height, in the same pose.</p>
 
       <section className="refs">
-        <figure><img src={styleMain} alt="style-main.png" /><figcaption>style-main.png (line, hair, face)</figcaption></figure>
-        <figure><img src={styleBody} alt="style-body.png" /><figcaption>style-body.png (proportions, poses)</figcaption></figure>
-        <figure><Character pose={POSES.idle} height={420} /><figcaption>new character</figcaption></figure>
+        <figure><img src={v2Original} alt="sehaz-v2.svg" style={{ height: 420, background: 'transparent' }} /><figcaption>original (sehaz-v2.svg)</figcaption></figure>
+        <figure><Character pose={POSES.idle} height={420} /><figcaption>the rig, idle</figcaption></figure>
       </section>
 
-      <h2>Hair close-up</h2>
-      <p className="lede">Head and shoulders, large, next to the reference the hair was traced from.</p>
+      <h2>Head close-up</h2>
       <section className="refs">
-        <figure><img src={styleBun} alt="style-bun.png" /><figcaption>style-bun.png</figcaption></figure>
-        <figure><img src={styleBunCloseup} alt="style-bun-closeup.png" style={{ height: 420 }} /><figcaption>style-bun-closeup.png (the traced hair)</figcaption></figure>
-        <figure><Character pose={POSES.idle} viewBox="20 -66 276 330" height={420} /><figcaption>new hair, close-up</figcaption></figure>
+        <figure><img src={v2Original} alt="sehaz-v2.svg head" style={{ height: 420, width: 'auto', objectFit: 'none', objectPosition: '0 0', clipPath: 'inset(0 0 48% 0)' }} /><figcaption>original</figcaption></figure>
+        <figure><Character pose={POSES.idle} viewBox="0 -10 309 400" height={420} /><figcaption>rig</figcaption></figure>
       </section>
 
       <h2>Pose sheet</h2>
@@ -63,8 +57,8 @@ export function CharacterReview() {
         <Row label="Run" note="longer stride, lean, big arm swing" stills={RUN.map((p, i) => <Character key={i} pose={p} height={H} />)} live={<AnimatedCharacter state="run" height={H} />} />
         <Row label="Turn" note="right, three-quarter, left" stills={[1, 0, -1].map((t) => <Character key={t} pose={POSES.turn} turn={t} height={H} />)} live={<AnimatedCharacter state="idle" facing={facing} height={H} />} />
         <Row label="Look" note="head tilted up, hands relaxed" stills={[<Character pose={POSES.look} height={H} />]} live={<AnimatedCharacter state="look" height={H} />} />
-        <Row label="Point" note="free arm fully out, upper right" stills={[<Character pose={POSES.point} height={H} />]} live={<AnimatedCharacter state="point" height={H} />} />
-        <Row label="Wave" note="elbow bent, hand open" stills={[<Character pose={POSES.wave} height={H} />]} live={<AnimatedCharacter state="wave" height={H} />} />
+        <Row label="Point" note="free arm out, upper right" stills={[<Character pose={POSES.point} height={H} />]} live={<AnimatedCharacter state="point" height={H} />} />
+        <Row label="Wave" note="arm up, hand open" stills={[<Character pose={POSES.wave} height={H} />]} live={<AnimatedCharacter state="wave" height={H} />} />
         <Row label="Order" note="hand slightly raised, speech bubble" stills={[<Character pose={POSES.order} bubble="make me a ___" height={H} />]} live={<AnimatedCharacter state="order" height={H} />} />
         <Row label="Teleport" note="fully drawn, half erased from the feet, mostly erased" stills={[0, 0.5, 0.9].map((e) => <Character key={e} pose={POSES.idle} erase={e} height={H} />)} live={<AnimatedCharacter state={teleport} height={H} />} />
       </section>

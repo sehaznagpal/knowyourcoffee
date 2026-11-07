@@ -80,13 +80,14 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
   const fgEl = useRef<HTMLDivElement>(null);
   const charEl = useRef<HTMLDivElement>(null);
   const charInner = useRef<HTMLDivElement>(null);
+  const topEl = useRef<HTMLDivElement>(null); // her own layer: above the world and the foreground, below the HUD
   const gridEl = useRef<HTMLDivElement>(null);
   const [vpEl, setVpEl] = useState<HTMLElement | null>(null);
   useEffect(() => setVpEl(rootEl.current!.closest('.viewport')), []);
   const compact = useCompact();
   // she stands about 38% of the screen height on a desktop and about 45% on a phone held sideways
   const charH = compact ? 374 : CHAR_H;
-  const charW = Math.round((charH * 316) / 768);
+  const charW = Math.round((charH * 309) / 772);
   const feetY = compact ? 760 : FEET_Y;
   const startInRoom = useRef(new URLSearchParams(window.location.search).get('test') === '1');
 
@@ -302,6 +303,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
       if (!tpCam) L.cx = clamp(reduced() ? goal : L.cx + (goal - L.cx) * (1 - Math.exp(-dt / 0.05)), hv, WORLD_W - hv);
 
       worldEl.current!.style.transform = `translate3d(${STAGE_W / 2 - L.cx}px,0,0)`;
+      topEl.current!.style.transform = `translate3d(${STAGE_W / 2 - L.cx}px,0,0)`;
       fgEl.current!.style.transform = `translate3d(${STAGE_W / 2 - L.cx * FOREGROUND_PARALLAX}px,0,0)`;
       // in the room she stands at a fixed spot on screen (the world layer is translated by the camera, so undo that)
       const wx = L.room ? L.cx + ROOM_CHAR_X - STAGE_W / 2 : L.x;
@@ -359,6 +361,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
   const near = target && target.kind !== 'frame' ? target.kind : null;
   const announce = inRoom ? 'You are in the testing room.' : target?.kind === 'frame' ? `In front of ${FRAMES.find((f) => f.id === target.id)!.drink.name}. Press up arrow or Enter to look closer.` : target ? `${lookLabels[target.kind]}: press up arrow.` : '';
   const miniW = 300;
+  const hintText = !target ? null : target.kind === 'frame' ? '↑ look closer' : target.kind === 'door' ? '↑ back to the café' : target.kind === 'tour' ? (tourSaved ? '↑ continue the tour' : '↑ start the tour') : '↑ test what you learned';
 
   return (
     <div ref={rootEl} className={`gallery${compact ? ' compact' : ''}${entering ? ' g-enter' : ''}`}>
@@ -376,29 +379,36 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
           onMood={(m) => { live.current.mood = m; }}
           onCheer={bounce}
           onAnswered={() => setVer((v) => v + 1)}
-          onLeave={() => goRoom(false)}
           compact={compact}
         />
       ) : null}
       <div ref={worldEl} className="g-world" style={{ visibility: inRoom ? 'hidden' : undefined }}>
         <World activeId={target?.kind === 'frame' ? target.id : null} near={near} tourAt={tourSaved} onOpen={walkToFrame} onTour={startTour} />
-        {/* she stays visible when the rest of the world is hidden for the testing room */}
-        <div ref={charEl} className="g-char" style={{ top: feetY - charH, width: charW, height: charH, visibility: 'visible' }}>
-          <div ref={charInner}><AnimatedCharacter state={cstate} facing={facing} height={charH} bubble="" /></div>
-        </div>
       </div>
       <div ref={fgEl} className="g-world g-fg" style={{ visibility: inRoom ? 'hidden' : undefined }}><Foreground /></div>
+      {/* she is the top world layer: nothing in the world or the foreground draws over her, only the HUD below */}
+      <div ref={topEl} className="g-world g-top">
+        <div ref={charEl} className="g-char" style={{ top: feetY - charH, width: charW, height: charH }}>
+          <div ref={charInner}><AnimatedCharacter state={cstate} facing={facing} height={charH} bubble="" /></div>
+          {hintText && !card && !mapOpen && !inRoom ? <i className="look-hint">{hintText}</i> : null}
+        </div>
+      </div>
 
-      {!compact ? <button type="button" className="wordmark g-wordmark" style={{ left: viewLeft + 60 }} onClick={onHome}>know your coffee</button> : null}
-      {!inRoom && !compact ? <SearchBox ref={searchRef} onPick={(d) => { const f = FRAMES.find((q) => q.id === d.id)!; goTo(f.x, f); }} /> : null}
-      {!inRoom && !compact ? <button type="button" className="g-mini" style={{ left: viewLeft + viewW - 20 - miniW - 24 }} aria-label="Open the map (M)" onClick={() => setMapOpen(true)}>
-        <MapStrip width={miniW} boxHeight={14} labelSize={10} />
-      </button> : null}
+      {!inRoom && !compact ? <SearchBox ref={searchRef} style={{ left: viewLeft + 24 }} onPick={(d) => { const f = FRAMES.find((q) => q.id === d.id)!; goTo(f.x, f); }} /> : null}
+      {inRoom && !compact ? <button type="button" className="g-back" style={{ left: viewLeft + 24 }} onClick={() => goRoom(false)}>← back to the gallery</button> : null}
+      {!compact ? (inRoom ? (
+        <div className="g-mini" style={{ left: viewLeft + viewW - 20 - miniW - 24, cursor: 'default' }} aria-hidden="true"><MapStrip width={miniW} boxHeight={14} labelSize={10} /></div>
+      ) : (
+        <button type="button" className="g-mini" style={{ left: viewLeft + viewW - 20 - miniW - 24 }} aria-label="Open the map (M)" onClick={() => setMapOpen(true)}>
+          <MapStrip width={miniW} boxHeight={14} labelSize={10} />
+        </button>
+      )) : null}
       {hint && !card && !mapOpen && !inRoom ? <p className="g-hint">{compact ? 'hold ← → to walk' : 'use ← → to walk around'}</p> : null}
 
       {!inRoom && !compact ? (
         <>
           <WalkButton dir={-1} left={viewLeft + 24} onHold={onHold} />
+          <BagButton state={bagState} left={viewLeft + 24} onClick={() => setBagOpen(true)} />
           <WalkButton dir={1} left={viewLeft + viewW - 24 - 56} onHold={onHold} />
           <button type="button" className="btn test-btn g-test" onClick={() => goRoom(true)}>test what you learned</button>
         </>
@@ -420,7 +430,6 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
       ) : null}
 
 
-      {!compact ? <BagButton state={bagState} left={viewLeft + 24} onClick={() => setBagOpen(true)} /> : null}
       {compact ? (
         <PhoneUI
           ref={searchRef}
@@ -430,7 +439,7 @@ export function Gallery({ scale, entering, active, onHome }: Props) {
           lookLabel={target ? lookLabels[target.kind] : 'Look closer'}
           onLook={look}
           onHold={onHold}
-          onHome={onHome}
+          onBack={() => goRoom(false)}
           onMap={() => setMapOpen(true)}
           onBag={() => setBagOpen(true)}
           onTest={() => goRoom(true)}

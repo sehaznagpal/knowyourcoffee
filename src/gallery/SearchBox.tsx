@@ -6,7 +6,7 @@ import { closest, search } from './search';
 export type SearchHandle = { focus: () => void };
 
 /** "find a coffee": matches as you type (names and aliases), arrow keys and Enter pick one. */
-export const SearchBox = forwardRef<SearchHandle, { onPick: (d: Drink) => void; className?: string; autoFocus?: boolean }>(function SearchBox({ onPick, className, autoFocus }, ref) {
+export const SearchBox = forwardRef<SearchHandle, { onPick: (d: Drink) => void; className?: string; autoFocus?: boolean; style?: React.CSSProperties }>(function SearchBox({ onPick, className, autoFocus, style }, ref) {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [i, setI] = useState(0);
@@ -22,7 +22,7 @@ export const SearchBox = forwardRef<SearchHandle, { onPick: (d: Drink) => void; 
   const pick = (d: Drink) => { setQ(''); setOpen(false); input.current?.blur(); onPick(d); };
 
   return (
-    <div className={`g-search${className ? ' ' + className : ''}`} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}>
+    <div className={`g-search${className ? ' ' + className : ''}`} style={style} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}>
       <input
         ref={input}
         type="text"
