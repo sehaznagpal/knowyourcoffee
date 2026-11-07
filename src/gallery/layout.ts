@@ -59,13 +59,34 @@ function wing(category: Category, archX: number): Wing {
   return { category, archX, frames, end: frames[frames.length - 1].x + 300 };
 }
 
-export const WINGS: Wing[] = [wing('with milk', LOBBY_W)];
-export const WORLD_W = WINGS[WINGS.length - 1].end + 150;
+export const CATEGORY_ORDER: Category[] = ['shots', 'with water', 'with drip', 'with milk', 'cold & sweet'];
+export const WINGS: Wing[] = (() => {
+  let x = LOBBY_W;
+  return CATEGORY_ORDER.map((c) => {
+    const w = wing(c, x);
+    x = w.end;
+    return w;
+  });
+})();
+export const CORRIDOR_END = WINGS[WINGS.length - 1].end;
+export const WORLD_W = CORRIDOR_END + 420; // the testing room closes the corridor
 export const FRAMES: FramePlace[] = WINGS.flatMap((w) => w.frames);
 
-export const DOOR_X = 190; // lobby entrance, back to the landing
+// lobby fixtures
+export const DOOR_X = 190; // entrance, back to the landing
 export const START_X = 470;
-export const LAMPS = [700, 1882, 3034]; // lobby, then between frames so no cord crosses a picture
+export const TOUR_X = 610; // "take the tour" sign
+export const DIRECTORY_X = 880; // the map, drawn on the wall
+export const TEST_DOOR_X = WORLD_W - 190; // the testing room door at the end of the corridor
+export const LAMPS = [700, ...WINGS.map((w) => w.frames[0].x + 192)];
+
+export type Room = { id: string; label: string; x0: number; x1: number; enter: number };
+const SHORT: Record<Category, string> = { shots: 'shots', 'with water': 'water', 'with drip': 'drip', 'with milk': 'milk', 'cold & sweet': 'sweet' };
+export const ROOMS: Room[] = [
+  { id: 'lobby', label: 'lobby', x0: 0, x1: LOBBY_W, enter: START_X },
+  ...WINGS.map((w) => ({ id: w.category, label: SHORT[w.category], x0: w.archX, x1: w.end, enter: w.archX + ARCH_W / 2 })),
+  { id: 'testing', label: 'test', x0: CORRIDOR_END, x1: WORLD_W, enter: TEST_DOOR_X - 90 },
+];
 
 export const recipeLine = (d: Drink, label: (i: Drink['layers'][number]['ing']) => string) =>
   d.layers.map((l) => `${label(l.ing)} ${l.parts}`).join(' · ');
