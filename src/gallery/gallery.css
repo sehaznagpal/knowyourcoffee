@@ -350,6 +350,7 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
   .gallery.compact {
     --k: calc(var(--s) / 0.46875); /* 1 at a 390 px tall screen */
     --P: clamp(68px, calc((100vw - 330px) / 5.6), 100px); /* jar pitch: 100 on a wide phone, tighter on a narrow one so the shelf stays between the corner buttons */
+    --P2: calc(0.8 * var(--P) + 0.24 * var(--A)); /* the pitch with the gap between neighbouring jars cut by 20% (jar width is 1.2 x the art height) */
     --L1: 17px; /* height of a row-1 label: one line (two on a narrow screen) */
     --A: max(34px, min(calc(43px * var(--k)), calc((832px * var(--s) - 280px - var(--L1) - var(--L1)) / 2))); /* jar art height, real px: 15% bigger than before, as tall as the room allows */
     --slab: 79px; /* counter edge (9) plus button band (58) plus 12 of padding, from the bottom of the screen */
@@ -360,22 +361,22 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
   .gallery.compact .room-glass { top: calc(832px - var(--slab) / var(--s) - 306px + 2px / var(--s)) !important; }
 
   /* shelf: 6 jars on a 104 px pitch, centred */
-  .gallery.compact .jar { width: calc(60px / var(--s)); height: auto; gap: 0; left: calc(640px + (var(--i) * var(--P) - 2.5 * var(--P) - 30px) / var(--s)) !important; }
+  .gallery.compact .jar { width: calc(60px / var(--s)); height: auto; gap: 0; left: calc(640px + (var(--i) * var(--P2) - 2.5 * var(--P2) - 30px) / var(--s)) !important; }
   .gallery.compact .jar.r0 { top: calc(32px / var(--s)) !important; }
   .gallery.compact .jar.r1 { top: calc((40px + var(--A) + var(--L1)) / var(--s)) !important; }
   .gallery.compact .jar > svg { width: auto; height: calc(var(--A) / var(--s)); }
   .gallery.compact .jar-label { font-size: calc(11px / var(--s)); line-height: 1.2; max-width: none; white-space: nowrap; padding: calc(1px / var(--s)) calc(5px / var(--s)); border-width: calc(1px / var(--s)); margin-top: calc(-1px / var(--s)); }
-  .gallery.compact .jar.r1 .jar-label { width: max-content; white-space: normal; max-width: calc(min(92px, var(--P) - 4px) / var(--s)); text-align: center; }
+  .gallery.compact .jar.r1 .jar-label { width: max-content; white-space: normal; max-width: calc(min(92px, var(--P2) - 4px) / var(--s)); text-align: center; }
   .gallery.compact .jar.r0 .jar-label { max-width: none; white-space: nowrap; }
   .gallery.compact .jar.r1[style*="--i: 3"] .jar-label { white-space: nowrap; max-width: none; }
-  .gallery.compact .jar.r1[style*="--i: 2"] .jar-label { max-width: calc((var(--P) + 22px) / var(--s)); padding-inline: calc(3px / var(--s)); }
-  .gallery.compact .shelf-board { left: calc(640px - (2.5 * var(--P) + 38px) / var(--s)) !important; width: calc((5 * var(--P) + 76px) / var(--s)) !important; height: calc(8px / var(--s)); }
+  .gallery.compact .jar.r1[style*="--i: 2"] .jar-label { max-width: calc((var(--P2) + 22px) / var(--s)); padding-inline: calc(3px / var(--s)); }
+  .gallery.compact .shelf-board { left: calc(640px - (2.5 * var(--P2) + 38px) / var(--s)) !important; width: calc((5 * var(--P2) + 76px) / var(--s)) !important; height: calc(8px / var(--s)); }
   .gallery.compact .shelf-board.r0 { top: calc((32px + var(--A) - 3px) / var(--s)) !important; }
   .gallery.compact .shelf-board.r1 { top: calc((40px + 2 * var(--A) + var(--L1) - 3px) / var(--s)) !important; }
   .gallery.compact .shelf-sign { font-size: calc(11.5px / var(--s)); padding: calc(2px / var(--s)) calc(8px / var(--s)); border-width: calc(1.5px / var(--s)); box-shadow: calc(2px / var(--s)) calc(2px / var(--s)) 0 #1e1e1e; }
   .gallery.compact .shelf-sign::before, .gallery.compact .shelf-sign::after { top: calc(-9px / var(--s)); height: calc(8px / var(--s)); }
-  .gallery.compact .shelf-sign.is-top { left: calc(640px + (var(--i) * var(--P) - 2.5 * var(--P)) / var(--s)) !important; top: calc(11px / var(--s)) !important; }
-  .gallery.compact .shelf-sign.is-left { left: calc(640px - (2.5 * var(--P) + 42px) / var(--s)) !important; top: calc((40px + var(--A) + var(--L1) + (var(--A) + 17px) / 2) / var(--s)) !important; }
+  .gallery.compact .shelf-sign.is-top { left: calc(640px + (var(--i) * var(--P2) - 2.5 * var(--P2)) / var(--s)) !important; top: calc(11px / var(--s)) !important; }
+  .gallery.compact .shelf-sign.is-left { left: calc(640px - (2.5 * var(--P2) + 42px) / var(--s)) !important; top: calc((40px + var(--A) + var(--L1) + (var(--A) + 17px) / 2) / var(--s)) !important; }
 
   /* the speech bubble: just above and beside her head, its pointer aimed at her */
   .gallery.compact .room-bubble { left: auto; right: calc(1280px - 141px); top: calc(172px / var(--s)); width: max-content; max-width: calc(135px / var(--s)); padding: calc(5px / var(--s)) calc(9px / var(--s)) calc(6px / var(--s)); border-width: calc(2px / var(--s)); border-radius: calc(12px / var(--s)); box-shadow: calc(2px / var(--s)) calc(2px / var(--s)) 0 #1e1e1e; }
@@ -432,7 +433,7 @@ button.map-tick:hover::after, button.map-tick:focus-visible::after { display: bl
   .ph-room-foot { position: absolute; left: calc(100% + 12px); top: 50%; translate: 0 -50%; display: block; }
   .ph-room .room-stats { font-size: 13px; white-space: nowrap; }
   /* the cup: 15% taller, its bottom still on the counter */
-  .gallery.compact .room-glass { transform: scaleY(1.15); transform-origin: 50% 100%; }
+  .gallery.compact .room-glass { transform-origin: 50% 100%; } /* scaled by Room.tsx so the lid clears the lowest shelf label by 12px */
 }
 
 /* ---- testing room: sound and bag top-right, 80% size, lined up with the mode pills; back button on the far left ---- */
@@ -449,4 +450,14 @@ body:has(.ph-room) .ph-top-right .ph-icon svg { width: 21px; height: 21px; }
   .gallery.compact .placard { width: max-content; margin-left: 100px; translate: -50% 0; pointer-events: auto; cursor: pointer; }
   .gallery.compact .placard.is-active { translate: -50% -4px; }
   .gallery.compact .placard span { display: none; }
+}
+
+/* ---- phone landscape, testing room: sound and bag visible at the top right ---- */
+@media (orientation: landscape) and (max-height: 500px) {
+  body:has(.ph-room) .ph-top { z-index: 5; padding: 12px 0 0; }
+  body:has(.ph-room) .ph-top-right { margin-left: auto; gap: 8px; }
+  body:has(.ph-room) .ph-top-right .ph-help { width: 38px; height: 38px; }
+  body:has(.ph-room) .ph-top-right .ph-bag { width: 45px; height: 45px; }
+  body:has(.ph-room) .ph-top-right .ph-help svg { width: 22px; height: 22px; }
+  body:has(.ph-room) .ph-top-right .ph-bag svg { width: 25px; height: 25px; }
 }

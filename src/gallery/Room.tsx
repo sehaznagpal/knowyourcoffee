@@ -135,6 +135,24 @@ export function TestingRoom({ viewLeft, bag, onMood, onCheer, onAnswered, compac
     return () => a.cancel();
   }, [fly, viewLeft]);
 
+  // phone: scale the cup down until its lid is at least 12px below the lowest shelf label, with its bottom still on the counter
+  useEffect(() => {
+    if (!compact) return;
+    const fit = () => {
+      const g = document.querySelector<HTMLElement>('.room-glass');
+      if (!g) return;
+      g.style.transform = 'none';
+      const r = g.getBoundingClientRect();
+      const low = Math.max(...[...document.querySelectorAll('.jar-label')].map((l) => l.getBoundingClientRect().bottom));
+      const k = Math.max(0.5, Math.min(1, (r.bottom - (low + 12)) / r.height));
+      g.style.transform = k < 1 ? `scale(${k})` : 'none';
+    };
+    fit();
+    const t = [window.setTimeout(fit, 150), window.setTimeout(fit, 800)];
+    window.addEventListener('resize', fit);
+    return () => { t.forEach(clearTimeout); window.removeEventListener('resize', fit); };
+  }, [compact]);
+
   const stats = `${progress.correct} right of ${progress.attempts} · streak ${progress.streak}`;
   const empty = pool !== undefined && pool.length === 0;
   const dis = !drink || !!result || empty;
