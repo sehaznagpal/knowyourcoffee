@@ -2,7 +2,7 @@ import { createContext, memo, useContext, useEffect, useRef, useState, type CSSP
 import './character.css';
 import {
   ANKLE, ARM_LEN, BEIGE, BLUE, BLUSH, CHAR_H, CHAR_W, CUFF, CUFF_BAND, CX, GRIP_LOCAL, GROUND, HAND_Y, HIP, HIP_Y, INK, JACKET, LEG_LEN, LILAC, L_IDLE, L_TILT, NECK_Y, PALM,
-  PAPER, SHAPES as S, SHOE, SHOULDER_L, SHOULDER_R, SLEEVE, SPLIT, THUMB, TROUSER, handPath, rotAbout, type HandKind,
+  PAPER, SHAPES as S, SKIN, SHOE, SHOULDER_L, SHOULDER_R, SLEEVE, SPLIT, THUMB, TROUSER, handPath, rotAbout, type HandKind,
 } from './geometry';
 import * as V from './v2shapes';
 import { IDLE, POSES, RUN, WALK, cyclePose, lerpPose, type Pose } from './poses';
@@ -79,10 +79,10 @@ const Leg = memo(function Leg({ side, transform, shoe }: { side: 'L' | 'R'; tran
   return (
     <g id={side === 'L' ? 'leg-left' : 'leg-right'} transform={transform} style={k(0.1)}>
       <Foot side={side} transform={shoe} part="base" />
-      <O d={v.shin} fill={PAPER} />
+      <O d={v.shin} fill={SKIN} />
       <Foot side={side} transform={shoe} part="tabs" />
       {/* the white line between the two legs */}
-      <O d={V.SKIRT} stroke={PAPER} w={8} deco clip={`url(#sv2-notch-${side})`} />
+      <O d={V.SKIRT} stroke={SKIN} w={8} deco clip={`url(#sv2-notch-${side})`} />
       <O d={V.SKIRT} fill={TROUSER} clip={`url(#sv2-half-${side})`} />
     </g>
   );
@@ -108,6 +108,7 @@ const Torso = memo(function Torso() {
 const JacketR = memo(function JacketR() {
   return (
     <g id="jacket-right" style={k(0.5)}>
+      <O d={V.JACKETR} stroke={INK} w={8} deco />
       <O d={V.JACKETR} fill={JACKET} />
       <Inside><path className="o" pathLength={1} d={V.POCKET} fill={BLUE} /></Inside>
     </g>
@@ -127,22 +128,24 @@ const ShoulderCaps = memo(function ShoulderCaps() {
 });
 
 const JacketL = memo(function JacketL() {
-  return <g id="jacket-left" style={k(0.5)}><O d={V.JACKETL} fill={JACKET} /></g>;
+  return <g id="jacket-left" style={k(0.5)}><O d={V.JACKETL} stroke={INK} w={8} deco /><O d={V.JACKETL} fill={JACKET} /></g>;
 });
 
 // One sleeve with its cuff: narrower at the shoulder, wider at the cuff, a slight elbow bend, a visible cuff edge. No lines down the sleeve.
 const Sleeve = () => (
   <>
+    <O d={SLEEVE} stroke={INK} w={8} deco />
     <O d={SLEEVE} fill={JACKET} />
+    <O d={CUFF_BAND} stroke={INK} w={8} deco />
     <O d={CUFF_BAND} fill="#434343" />
-    <Inside><path className="o" pathLength={1} d={CUFF} fill="none" stroke="#2c2c2c" strokeWidth={3} strokeLinecap="round" /></Inside>
+    <Inside><path className="o" pathLength={1} d={CUFF} fill="none" stroke={INK} strokeWidth={4} strokeLinecap="round" /></Inside>
   </>
 );
 // A soft mitten with a small thumb, white like the face, coming out of the cuff
 const Mitten = () => (
   <g transform={`translate(0 ${HAND_Y})`}>
-    <O d={THUMB} fill={PAPER} />
-    <O d={PALM} fill={PAPER} />
+    <O d={THUMB} fill={SKIN} />
+    <O d={PALM} fill={SKIN} />
   </g>
 );
 
@@ -152,7 +155,7 @@ const FreeArm = memo(function FreeArm({ angle, flip, hand }: { angle: number; fl
     <g id="arm-right" transform={`translate(${SHOULDER_R[0]} ${SHOULDER_R[1]}) rotate(${angle - 90})`} style={k(0.55)}>
       {hand === 'mitten' ? <Mitten /> : (
         <g transform={`translate(0 ${HAND_Y + 8}) rotate(90) translate(-6 0) scale(1 ${flip ? -1 : 1})`}>
-          <O d={handPath(hand)} fill={PAPER} />
+          <O d={handPath(hand)} fill={SKIN} />
         </g>
       )}
       <Sleeve />
@@ -194,7 +197,7 @@ const Head = memo(function Head({ tilt, turn }: { tilt: number; turn: number }) 
   const blink = useRef({ dur: 3 + Math.random() * 2, delay: -Math.random() * 3 }).current; // each blink comes every 3 to 5 s
   return (
     <g className="head" transform={`rotate(${tilt} ${CX} ${NECK_Y})`} style={k(0.85)}>
-      <g id="head"><O d={V.FACE} fill={PAPER} /></g>
+      <g id="head"><O d={V.FACE} fill={SKIN} /></g>
       <Inside>
         <g id="face" className="feat">
           <g transform={`translate(${de} 0)`}>
