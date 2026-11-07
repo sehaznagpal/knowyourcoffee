@@ -1,72 +1,25 @@
-/* Sehaz: states are CSS on the groups of one svg. Position uses `translate`, `rotate` and `scale` properties so the states never fight over `transform`. */
+/* Sehaz. The pose (limbs, lean, tilt) is drawn from numbers in Character.tsx; this file only holds the always-on idle life and the teleport erase. */
 .char { display: block; overflow: visible; }
-.char * { transform-box: view-box; }
-.char .o { transition: none; }
+.char .breath, .char .eyes, .char .hairback { transform-box: view-box; }
 
-/* turn: mirror around her centre with a quick 120 ms squash */
-.char .facing { transform-origin: 158px 0; transform: scaleX(var(--dir, 1)); transition: transform 120ms ease-in-out; }
-
-/* idle (always on underneath): breathing, blink, hair sway */
-.char .torso { transform-origin: 158px 768px; animation: breathe 2.4s ease-in-out infinite; }
-.char .eyes { transform-origin: 186px 108px; animation: blink 4.2s infinite; }
-.char .hairback { transform-origin: 160px 40px; animation: sway 3.4s ease-in-out infinite alternate; }
+/* idle life: breathing (2.4 s loop), blink every ~4 s, hair sway */
+.char .breath { animation: breathe 2.4s ease-in-out infinite; }
+.char .eyes { transform-box: fill-box; transform-origin: center; animation: blink 4.2s infinite; }
+.char .hairback { transform-origin: 158px 40px; animation: sway 3.4s ease-in-out infinite alternate; }
 @keyframes breathe { 50% { translate: 0 -1.5px; } }
 @keyframes blink { 0%, 93%, 100% { scale: 1 1; } 95.5% { scale: 1 0.1; } }
-@keyframes sway { from { rotate: -0.7deg; } to { rotate: 0.7deg; } }
+@keyframes sway { from { rotate: -0.6deg; } to { rotate: 0.6deg; } }
 
-/* walk and run: a 4 pose cycle (contact, pass, contact, pass) at 8 poses a second; run doubles it */
-.char[data-state='walk'] { --cycle: 0.5s; --swing: 11deg; --lift: -8px; }
-.char[data-state='run'] { --cycle: 0.25s; --swing: 17deg; --lift: -12px; }
-.char[data-state='walk'] .leg, .char[data-state='run'] .leg,
-.char[data-state='walk'] .shoe, .char[data-state='run'] .shoe,
-.char[data-state='walk'] .swing, .char[data-state='run'] .swing { animation-duration: var(--cycle); animation-iteration-count: infinite; animation-timing-function: steps(1, end); }
-.char[data-state='walk'] .leg-left, .char[data-state='run'] .leg-left { transform-origin: 105px 565px; animation-name: legL; }
-.char[data-state='walk'] .leg-right, .char[data-state='run'] .leg-right { transform-origin: 205px 565px; animation-name: legR; }
-.char[data-state='walk'] .shoe-left, .char[data-state='run'] .shoe-left { transform-origin: 110px 704px; animation-name: shoeL; }
-.char[data-state='walk'] .shoe-right, .char[data-state='run'] .shoe-right { transform-origin: 195px 700px; animation-name: shoeR; }
-.char[data-state='walk'] .swing, .char[data-state='run'] .swing { transform-origin: 82px 506px; animation-name: bagSwing; }
-.char[data-state='walk'] .torso, .char[data-state='run'] .torso { animation: bob var(--cycle) steps(1, end) infinite; }
-.char[data-state='run'] .torso { rotate: 5deg; transform-origin: 158px 600px; }
-@keyframes legL { 0% { rotate: var(--swing); translate: 0 0; } 25% { rotate: 0deg; translate: 0 var(--lift); } 50% { rotate: calc(var(--swing) * -1); translate: 0 0; } 75% { rotate: 0deg; translate: 0 0; } }
-@keyframes legR { 0% { rotate: calc(var(--swing) * -1); translate: 0 0; } 25% { rotate: 0deg; translate: 0 0; } 50% { rotate: var(--swing); translate: 0 0; } 75% { rotate: 0deg; translate: 0 var(--lift); } }
-@keyframes shoeL { 0% { rotate: calc(var(--swing) * -1); } 25% { rotate: 0deg; } 50% { rotate: var(--swing); } 75% { rotate: 0deg; } }
-@keyframes shoeR { 0% { rotate: var(--swing); } 25% { rotate: 0deg; } 50% { rotate: calc(var(--swing) * -1); } 75% { rotate: 0deg; } }
-@keyframes bagSwing { 0% { rotate: 3deg; } 25% { rotate: 0deg; } 50% { rotate: -3deg; } 75% { rotate: 0deg; } }
-@keyframes bob { 0%, 50% { translate: 0 0; } 25%, 75% { translate: 0 -3px; } }
-
-/* look: head tilts up a little */
-.char .head { transform-origin: 170px 205px; transition: rotate 150ms ease-out; }
-.char[data-state='look'] .head { rotate: -6deg; }
-
-/* point and wave: the free arm comes out of the jacket */
-.char .arm { opacity: 0; transition: opacity 150ms ease-out; }
-.char .arm-rot { transform-origin: 0 0; rotate: 40deg; transition: rotate 220ms ease-out; }
-.char[data-state='point'] .arm, .char[data-state='wave'] .arm { opacity: 1; }
-.char[data-state='point'] .arm-rot { rotate: -28deg; }
-.char[data-state='wave'] .arm-rot { rotate: -88deg; animation: wave 0.5s ease-in-out 3 220ms; }
-@keyframes wave { 50% { rotate: -64deg; } }
-
-/* order: speech bubble pops once */
-.char .bubble { opacity: 0; transform-origin: 40px 100px; scale: 0.9; transition: opacity 200ms ease-out, scale 200ms ease-out; pointer-events: none; }
-.char[data-state='order'] .bubble { opacity: 1; scale: 1; }
-
-/* teleport: outlines are erased feet to head (fills fade), redrawn head to feet; a few pencil flicks stay behind */
+/* teleport: --erase 0..1 drives every outline. Parts with a small --k (feet) erase first; counting --erase back down redraws the head first. */
+.char[data-erasing] .o {
+  --p: clamp(0, calc((var(--erase, 0) - var(--k, 0) * 0.6) / 0.4), 1);
+  stroke-dasharray: 1;
+  stroke-dashoffset: var(--p);
+  fill-opacity: calc(1 - clamp(0, calc(var(--p) * 1.6), 1));
+}
 .char .flick { opacity: 0; }
-.char[data-state^='teleport'] .o { stroke-dasharray: 1; }
-.char[data-state='teleport-out'] .o { animation: erase 150ms ease-in both; animation-delay: calc(var(--k, 0) * 200ms); }
-.char[data-state='teleport-in'] .o { animation: draw 150ms ease-out both; animation-delay: calc((1 - var(--k, 0)) * 200ms); }
-.char[data-state='teleport-out'] .flick { animation: flick 450ms ease-out 60ms both; }
-.char[data-state='teleport-in'] .flick { animation: flick 450ms ease-out reverse both; }
-@keyframes erase { to { stroke-dashoffset: 1; fill-opacity: 0; } }
-@keyframes draw { from { stroke-dashoffset: 1; fill-opacity: 0; } 55% { stroke-dashoffset: 0; fill-opacity: 0; } to { stroke-dashoffset: 0; fill-opacity: 1; } }
-@keyframes flick { 0% { opacity: 0; translate: 0 0; } 25% { opacity: 1; } 100% { opacity: 0; translate: 0 -10px; } }
+.char[data-erasing] .flick { opacity: calc(clamp(0, calc(var(--erase) * 5), 1) * clamp(0, calc((1 - var(--erase)) * 5), 1)); }
 
 @media (prefers-reduced-motion: reduce) {
-  .char .torso, .char .eyes, .char .hairback { animation: none; }
-  .char[data-state='walk'] .torso, .char[data-state='run'] .torso { animation: none; } /* no body bob; legs still walk */
-  .char[data-state='teleport-out'] .o, .char[data-state='teleport-in'] .o, .char .flick { animation: none; }
-  .char[data-state='teleport-out'] .facing { animation: fade-out 200ms linear both; }
-  .char[data-state='teleport-in'] .facing { animation: fade-in 200ms linear both; }
-  @keyframes fade-out { to { opacity: 0; } }
-  @keyframes fade-in { from { opacity: 0; } }
+  .char .breath, .char .eyes, .char .hairback { animation: none; }
 }

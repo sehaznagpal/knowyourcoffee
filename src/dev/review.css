@@ -1,16 +1,25 @@
 .review { min-height: 100vh; padding: 32px 40px 80px; background: var(--beige); overflow: auto; }
 html:has(.review), body:has(.review), #root:has(.review) { overflow: auto; height: auto; }
 .review h1 { margin: 0 0 4px; font: 700 40px/1 'Excon', sans-serif; }
-.review h2 { margin: 48px 0 12px; font: 700 26px/1 'Excon', sans-serif; }
-.lede { margin: 0 0 24px; font: 300 18px/1.3 'Excon', sans-serif; max-width: 640px; }
-.pair { display: flex; gap: 80px; align-items: flex-end; }
-.pair figure, .cell { margin: 0; }
-.pair figcaption { margin-top: 10px; font: 300 16px 'Excon', sans-serif; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
-.cell { background: var(--offwhite); border: 2px solid var(--ink); padding: 16px 16px 12px; }
-.cell .stage { height: 330px; display: flex; align-items: flex-end; justify-content: center; position: static; transform: none; width: auto; }
-.cell figcaption { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font: 300 14px/1.2 'Excon', sans-serif; }
-.cell figcaption b { font: 700 18px 'Excon', sans-serif; }
-.weight { display: flex; align-items: flex-end; gap: 40px; }
-.cafe { width: 769px; height: 654px; flex: none; }
-.cafe svg { display: block; width: 100%; height: 100%; }
+.review h2 { margin: 56px 0 12px; font: 700 26px/1 'Excon', sans-serif; }
+.lede { margin: 0 0 24px; font: 300 18px/1.3 'Excon', sans-serif; max-width: 680px; }
+.review figure { margin: 0; }
+.review figcaption { margin-top: 8px; font: 300 15px 'Excon', sans-serif; }
+.refs { display: flex; gap: 48px; align-items: flex-end; }
+.refs img { height: 420px; width: auto; display: block; background: #fff; }
+
+.sheet { display: flex; flex-direction: column; gap: 14px; }
+.prow { display: grid; grid-template-columns: 150px auto 1fr; gap: 18px; align-items: end; background: var(--offwhite); border: 2px solid var(--ink); padding: 14px 18px; }
+.plabel { display: flex; flex-direction: column; gap: 4px; align-self: center; font: 300 14px/1.25 'Excon', sans-serif; }
+.plabel b { font: 700 20px 'Excon', sans-serif; }
+.pstills { display: flex; gap: 8px; align-items: flex-end; }
+.pcell { padding-top: 36px; display: flex; flex-direction: column; align-items: center; min-width: 110px; padding: 0 6px; }
+.pcell.live { border-left: 2px dashed var(--ink); padding-left: 24px; justify-self: start; min-width: 200px; }
+.pcell small { margin-top: 4px; font: 300 12px 'Excon', sans-serif; }
+
+.room { position: relative; width: 1000px; height: 470px; border: 2px solid var(--ink); overflow: hidden; }
+.room-wall { position: absolute; inset: 0 0 auto 0; height: 300px; background:
+  linear-gradient(to bottom, #272727 0 2px, transparent 2px) 0 -1px / 20px 20px,
+  linear-gradient(to right, #272727 0 2px, transparent 2px) -1px 0 / 20px 20px, #1e1e1e; }
+.room-floor { position: absolute; inset: 300px 0 0 0; background: var(--beige); border-top: 3px solid var(--ink); }
+.room-folk { position: absolute; left: 0; right: 0; bottom: 30px; display: flex; justify-content: space-around; align-items: flex-end; }

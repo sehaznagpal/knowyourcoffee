@@ -1,133 +1,194 @@
-import type { CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import './character.css';
-import { BLUE, CHAR_H, CHAR_W, INK, LILAC, PAPER, SHAPES as S } from './shapes';
+import {
+  BLUE, CHAR_H, CHAR_W, CX, HIP_X, HIP_Y, INK, LEG_LEN, LILAC, NECK_Y, PAPER, SHAPES as S, arm, face, handPath,
+} from './geometry';
+import { IDLE, POSES, RUN, WALK, cyclePose, lerpPose, type Pose } from './poses';
 
-export type CharacterState = 'idle' | 'walk' | 'run' | 'look' | 'point' | 'wave' | 'order' | 'teleport-out' | 'teleport-in';
+export type CharacterState = 'idle' | 'walk' | 'run' | 'look' | 'point' | 'wave' | 'order' | 'turn' | 'teleport-out' | 'teleport-in';
 
-type Props = {
-  state?: CharacterState;
-  facing?: 1 | -1; // 1 = facing right
-  bubble?: string; // speech bubble text (shown in the 'order' state)
-  height?: number | string; // CSS height; width follows
-  className?: string;
-};
+const W = 8; // one even outline: about 3.3px when she stands 38% of an 832px frame
+const rad = (d: number) => (d * Math.PI) / 180;
+const GROUND = HIP_Y + LEG_LEN + 0; // ankle height when standing straight (706)
 
-const W = 8; // outline weight in character units: about 3.3px when she stands 38% of an 832px frame
-const D = 5; // detail strokes
-
-type PathProps = { d: string; fill?: string; stroke?: string; w?: number };
+type PathProps = { d: string; fill?: string; w?: number; stroke?: string };
 // Every outline has pathLength 1 so the teleport can erase and redraw it with stroke-dashoffset.
-const P = ({ d, fill = 'none', stroke = INK, w = W }: PathProps) => (
+const O = ({ d, fill = 'none', w = W, stroke = INK }: PathProps) => (
   <path className="o" pathLength={1} d={d} fill={fill} stroke={stroke} strokeWidth={w} strokeLinejoin="round" strokeLinecap="round" />
 );
-const Detail = ({ d, stroke = INK, w = D }: { d: string; stroke?: string; w?: number }) => <P d={d} stroke={stroke} w={w} />;
 // Teleport order: 0 = feet, 1 = head
 const k = (v: number) => ({ '--k': v }) as CSSProperties;
 
-export function Character({ state = 'idle', facing = 1, bubble = 'make me a ___', height = 360, className }: Props) {
+type Props = {
+  pose?: Pose;
+  turn?: number; // 1 = facing right, -1 = facing left, 0 = facing us (three-quarter between the two)
+  erase?: number; // 0 = fully drawn, 1 = erased (feet first); counting back down redraws head first
+  bubble?: string | null; // speech bubble text
+  halo?: boolean; // paper-white edge on the hair so it reads against the black gallery wall
+  height?: number | string;
+  className?: string;
+};
+
+/** One still of Sehaz. Named groups: hair-back, head, face, earring, jacket, top, tee, trousers, leg-left, leg-right, shoe-left, shoe-right, hand, bag. */
+export function Character({ pose = IDLE, turn = 1, erase = 0, bubble = null, halo = false, height = 360, className }: Props) {
+  const t = Math.abs(turn);
+  const sign = turn < 0 ? -1 : 1;
+  const sx = sign * (0.88 + 0.12 * t);
+
+  // Legs: keep the planted foot on the floor, drop the hips when the legs spread
+  const legs = { L: pose.legL, R: pose.legR };
+  const planted = (['L', 'R'] as const).filter((s) => !legs[s].lift);
+  const ref = (planted.length ? planted : ['L' as const]).reduce((a, b) => (Math.abs(legs[b].a) > Math.abs(legs[a].a) ? b : a));
+  const hipY = GROUND - LEG_LEN * Math.cos(rad(legs[ref].a)) + (legs[ref].lift ?? 0);
+  const legT = (s: 'L' | 'R') => {
+    const l = legs[s];
+    const rise = hipY + LEG_LEN * Math.cos(rad(l.a)) - GROUND + (l.lift ?? 0);
+    return { rise, transform: `translate(${HIP_X[s]} ${hipY - rise}) rotate(${-l.a})`, shoe: `translate(0 ${LEG_LEN}) rotate(${0.9 * l.a + (l.lift ? 8 : 0)}) scale(${0.55 + 0.45 * t} 1)` };
+  };
+  const lt = legT('L'), rt = legT('R');
+
+  const aL = arm('L', pose.armL.a1, pose.armL.a2, 16);
+  const aR = arm('R', pose.armR.a1, pose.armR.a2, pose.flareR);
+  const f = face(t);
+  const handFlipR = Math.sin(rad(pose.armR.a2)) > 0.4;
+  const grip: [number, number] = [aL.wrist[0] + 14 * Math.cos(rad(aL.angle)), aL.wrist[1] + 14 * Math.sin(rad(aL.angle))];
+  const bagAngle = Math.max(-35, Math.min(35, 0.45 * (90 - aL.angle)));
+
   return (
     <svg
       className={`char${className ? ' ' + className : ''}`}
-      data-state={state}
+      data-erasing={erase > 0.001 ? '' : undefined}
       viewBox={`0 0 ${CHAR_W} ${CHAR_H}`}
-      style={{ height, width: 'auto', aspectRatio: `${CHAR_W} / ${CHAR_H}`, '--dir': facing } as CSSProperties}
+      style={{ height, width: 'auto', aspectRatio: `${CHAR_W} / ${CHAR_H}`, '--erase': erase } as CSSProperties}
       role="img"
       aria-label="Sehaz, the gallery guide"
     >
-      <g className="facing">
-        {/* pencil flicks that stay behind when she is erased */}
-        <g className="flick">
-          {S.flicks.map((d, i) => <path key={i} d={d} fill="none" stroke={INK} strokeWidth={4} strokeLinecap="round" />)}
-        </g>
+      <g className="flick">{S.flicks.map((d, i) => <path key={i} d={d} fill="none" stroke={INK} strokeWidth={4} strokeLinecap="round" />)}</g>
 
-        <g className="legs">
-          <g id="leg-right" className="leg leg-right" style={k(0.12)}>
-            <P d={S.legRight} fill={INK} />
-            <P d={S.ankleRight} fill={PAPER} />
-            <Detail d={S.creaseRight} stroke={PAPER} w={3} />
-            <g id="shoe-right" className="shoe shoe-right" style={k(0)}>
-              <P d={S.shoeRight.body} fill={BLUE} />
-              <P d={S.shoeRight.sole} w={6} />
-              {S.shoeRight.laces.map((d, i) => <Detail key={i} d={d} w={4} />)}
-            </g>
+      <g transform={`translate(${CX} 0) scale(${sx} 1) translate(${-CX} 0)`}>
+        <g id="leg-right" transform={rt.transform} style={k(0.1)}>
+          <O d={S.leg} fill={INK} />
+          <O d={S.ankle} fill={PAPER} w={6} />
+          <g id="shoe-right" transform={rt.shoe} style={k(0)}>
+            <O d={S.shoe} fill={BLUE} />
+            {S.laces.map((d, i) => <O key={i} d={d} w={4} />)}
           </g>
-          <g id="leg-left" className="leg leg-left" style={k(0.12)}>
-            <P d={S.legLeft} fill={INK} />
-            <P d={S.ankleLeft} fill={PAPER} />
-            <Detail d={S.creaseLeft} stroke={PAPER} w={3} />
-            <g id="shoe-left" className="shoe shoe-left" style={k(0)}>
-              <P d={S.shoeLeft.body} fill={BLUE} />
-              <P d={S.shoeLeft.sole} w={6} />
-              {S.shoeLeft.laces.map((d, i) => <Detail key={i} d={d} w={4} />)}
-            </g>
+        </g>
+        <g id="leg-left" transform={lt.transform} style={k(0.1)}>
+          <O d={S.leg} fill={INK} />
+          <O d={S.seam} stroke={PAPER} w={3.5} />
+          <O d={S.ankle} fill={PAPER} w={6} />
+          <g id="shoe-left" transform={lt.shoe} style={k(0)}>
+            <O d={S.shoe} fill={BLUE} />
+            {S.laces.map((d, i) => <O key={i} d={d} w={4} />)}
           </g>
         </g>
 
-        <g className="torso">
-          <g id="hair-back" className="hairback" style={k(1)}>
-            <P d={S.hairBack} fill={INK} />
-            {S.hairLines.map((d, i) => <Detail key={i} d={d} stroke={PAPER} w={2.5} />)}
-          </g>
-          <g id="trousers" style={k(0.25)}><P d={S.trousers} fill={INK} /></g>
-          <g id="tee" style={k(0.4)}><P d={S.tee} fill={BLUE} /></g>
-          <g id="top" style={k(0.45)}><P d={S.top} fill={LILAC} /></g>
-          <g style={k(0.7)}><P d={S.neck} fill={PAPER} /></g>
+        <g transform={`translate(${pose.shiftX} ${hipY - HIP_Y}) rotate(${pose.lean} ${CX} ${HIP_Y})`}>
+          <g className="breath">
+            <g id="hair-back" className="hairback" style={k(1)}><O d={S.hairBack} fill={INK} stroke={halo ? PAPER : INK} /></g>
+            <g id="trousers" style={k(0.2)}><O d={S.hips} fill={INK} /></g>
+            <g id="tee" style={k(0.35)}><O d={S.tee} fill={BLUE} /></g>
+            <g id="top" style={k(0.4)}><O d={S.top} fill={LILAC} /></g>
+            <g style={k(0.65)}><O d={S.neck} fill={PAPER} /></g>
+            <g id="jacket" style={k(0.5)}><O d={S.panelR} fill={PAPER} /><O d={S.panelL} fill={PAPER} /></g>
 
-          <g className="head" style={k(0.85)}>
-            <g id="head"><P d={S.head} fill={PAPER} />{S.fringe.map((d, i) => <Detail key={i} d={d} />)}</g>
-            <P d={S.ear} fill={PAPER} w={6} />
-            <Detail d={S.earInner} w={3.5} />
-            <g id="earring"><Detail d={S.earringStem} w={3} /><P d={S.earring} fill={BLUE} w={4.5} /></g>
-            <g id="face">
-              <path className="o" d={S.blushLeft} fill={LILAC} />
-              <path className="o" d={S.blushRight} fill={LILAC} />
-              <g className="eyes">
-                <path className="o" d={S.eyeLeft} fill={INK} />
-                <path className="o" d={S.eyeRight} fill={INK} />
+            <g className="head" transform={`rotate(${pose.tilt} ${CX} ${NECK_Y})`} style={k(0.85)}>
+              <g id="head"><O d={S.face} fill={PAPER} /><O d={S.hairCap} fill={INK} stroke={halo ? PAPER : INK} /></g>
+              <g id="face">
+                <g className="eyes"><path className="o" d={f.eyeL} fill={INK} /><path className="o" d={f.eyeR} fill={INK} /></g>
+                <O d={f.nose} w={4} />
+                <O d={f.smile} w={4} />
               </g>
-              <Detail d={S.nose} w={4} />
+              <g id="earring"><O d={f.stud} fill={BLUE} w={3.5} /></g>
             </g>
-          </g>
 
-          <g id="jacket" style={k(0.55)}>
-            <P d={S.jacketRight} fill={PAPER} />
-            {S.foldsRight.map((d, i) => <Detail key={i} d={d} />)}
-            <Detail d={S.glint} stroke={BLUE} w={6} />
-            <P d={S.jacketLeft} fill={PAPER} />
-            {S.foldsLeft.map((d, i) => <Detail key={i} d={d} />)}
-          </g>
-
-          <g className="swing" style={k(0.3)}>
-            <g id="bag">
-              <P d={S.bagHandle} stroke={INK} w={11} />
-              <Detail d={S.bagHandle} stroke={LILAC} w={4} />
-              <P d={S.bagBody} fill={LILAC} />
-              <Detail d={S.bagZip} />
-              <Detail d={S.bagTab} w={4} />
-              <Detail d={S.bagSeam} w={4} />
+            {/* free arm: sleeve from shoulder to a wide cuff, hand out of the cuff */}
+            <g style={k(0.55)}>
+              <g id="hand-right" transform={`translate(${aR.wrist[0]} ${aR.wrist[1]}) rotate(${aR.angle}) translate(-12 0) scale(1 ${handFlipR ? -1 : 1})`}>
+                <O d={handPath(pose.handR)} fill={PAPER} />
+              </g>
+              <O d={aR.sleeve} fill={PAPER} />
             </g>
-          </g>
-          <g id="hand" style={k(0.35)}>
-            <P d={S.hand} fill={PAPER} />
-            {S.fingers.map((d, i) => <Detail key={i} d={d} w={3} />)}
-          </g>
-
-          {/* the free arm: tucked away until she points or waves */}
-          <g className="arm" transform="translate(226 206)" style={k(0.5)}>
-            <g className="arm-rot">
-              <P d={S.sleeve} fill={PAPER} />
-              <Detail d={S.sleeveFold} w={4} />
-              <P d={S.armHand} fill={PAPER} w={6} />
-              <Detail d={S.thumb} w={5} />
+            {/* bag arm: the bag hangs from the hand */}
+            <g style={k(0.3)}>
+              <g id="bag" transform={`translate(${grip[0]} ${grip[1] - 6}) rotate(${bagAngle})`}>
+                <O d={S.bagHandle} stroke={INK} w={W} />
+                <O d={S.bagBody} fill={LILAC} />
+              </g>
+              <g id="hand" transform={`translate(${aL.wrist[0]} ${aL.wrist[1]}) rotate(${aL.angle}) translate(-12 0)`}>
+                <O d={handPath('mitten')} fill={PAPER} />
+              </g>
+              <O d={aL.sleeve} fill={PAPER} />
             </g>
           </g>
         </g>
-
       </g>
-      <g className="bubble" transform="translate(214 -92)">
-        <P d={S.bubble} fill={PAPER} w={6} />
-        <text x={127} y={46} textAnchor="middle" fontFamily="Excon, sans-serif" fontWeight={700} fontSize={30} fill={INK}>{bubble}</text>
+
+      {bubble ? (
+        <g className="bubble" transform="translate(206 -96)">
+          <O d={S.bubble} fill={PAPER} w={6} />
+          <text x={127} y={46} textAnchor="middle" fontFamily="Excon, sans-serif" fontWeight={700} fontSize={30} fill={INK}>{bubble}</text>
         </g>
+      ) : null}
     </svg>
+  );
+}
+
+// ---- animation: state -> pose, driven per frame ----
+const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TELEPORT_MS = 350;
+
+export function useCharacterMotion(state: CharacterState, facing: 1 | -1) {
+  const [frame, setFrame] = useState({ pose: IDLE, turn: facing as number, erase: state === 'teleport-in' ? 1 : 0, opacity: 1 });
+  const live = useRef({ pose: IDLE, turn: facing as number, state, facing, since: performance.now() });
+  const prevState = useRef(state);
+
+  if (prevState.current !== state) {
+    prevState.current = state;
+    live.current.since = performance.now();
+  }
+  live.current.state = state;
+  live.current.facing = facing;
+
+  useEffect(() => {
+    let raf = 0, last = performance.now();
+    const loop = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      const L = live.current;
+      const age = (now - L.since) / 1000;
+      const cyc = L.state === 'walk' || L.state === 'run';
+      const target =
+        L.state === 'walk' ? cyclePose(WALK, (now / 1000) * 8)
+        : L.state === 'run' ? cyclePose(RUN, (now / 1000) * 16)
+        : L.state === 'turn' ? POSES.turn
+        : L.state in POSES ? POSES[L.state as keyof typeof POSES]
+        : IDLE;
+      L.pose = lerpPose(L.pose, target, 1 - Math.exp(-dt / (cyc ? 0.03 : 0.07)));
+      // turning passes through the three-quarter view, then flips
+      const want = L.state === 'turn' ? 0 : L.facing;
+      const step = dt / 0.24;
+      L.turn += Math.max(-step, Math.min(step, want - L.turn));
+      let erase = 0, opacity = 1;
+      if (L.state === 'teleport-out') { erase = Math.min(1, (age * 1000) / TELEPORT_MS); }
+      if (L.state === 'teleport-in') { erase = Math.max(0, 1 - (age * 1000) / TELEPORT_MS); }
+      if (reduced() && L.state.startsWith('teleport')) { opacity = L.state === 'teleport-out' ? Math.max(0, 1 - age / 0.2) : Math.min(1, age / 0.2); erase = 0; }
+      setFrame({ pose: L.pose, turn: L.turn, erase, opacity });
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return frame;
+}
+
+export function AnimatedCharacter({ state = 'idle', facing = 1, bubble, halo, height, className }: { state?: CharacterState; facing?: 1 | -1; bubble?: string | null; halo?: boolean; height?: number | string; className?: string }) {
+  const m = useCharacterMotion(state, facing);
+  return (
+    <div style={{ opacity: m.opacity, display: 'inline-block', lineHeight: 0 }}>
+      <Character pose={m.pose} turn={m.turn} erase={m.erase} halo={halo} bubble={state === 'order' ? (bubble ?? 'make me a ___') : null} height={height} className={className} />
+    </div>
   );
 }
