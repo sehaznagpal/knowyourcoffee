@@ -41,9 +41,9 @@ const beanPoints = (rx: number, ry: number, seed: number) =>
     const t = (i / 10) * Math.PI * 2, j = 0.9 + 0.12 * Math.sin(i * 2.3 + seed);
     return `${(Math.cos(t) * rx * j).toFixed(1)},${(Math.sin(t) * ry * j).toFixed(1)}`;
   }).join(' ');
-function BeanBand() {
+export function BeanBand({ className = 'cb-band' }: { className?: string }) {
   return (
-    <svg className="cb-band" viewBox="0 0 320 138" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <svg className={className} viewBox="0 0 320 138" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <rect width="320" height="138" fill="#F4F0E4" />
       <defs>
         {BEANS.map(([x, y, rx, ry, r], i) => (

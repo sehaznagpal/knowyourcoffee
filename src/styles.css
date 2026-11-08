@@ -282,3 +282,8 @@ body { background: var(--beige); color: var(--ink); font-family: 'Excon', sans-s
   .door-hit:hover { transform: translateY(-3px); box-shadow: 4px 4px 0 var(--blue); }
   .pill:hover:not(:disabled) { background: var(--offwhite); }
 }
+
+/* rotate gate: the card-back bean pattern fills the screen, the message sits in a paper box */
+.rg-beans { position: absolute; inset: 0; overflow: hidden; display: flex; flex-direction: column; }
+.rg-tile { display: block; flex: none; width: 100%; aspect-ratio: 320 / 138; }
+.rg-box { position: relative; max-width: 85%; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; background: #F4F0E4; border: 2px solid #1e1e1e; box-shadow: 6px 6px 0 #1e1e1e; }
