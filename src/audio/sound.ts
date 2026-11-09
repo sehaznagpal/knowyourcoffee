@@ -257,11 +257,16 @@ export const play = {
         noise({ type: 'bandpass', f0: 1500, q: 0.8, gain: 0.35, dur: 0.4, shape: 'flat' });
     }
   },
-  /** A soft rustle of leaves when a plant is touched. */
+  /** Grass and leaves moving: a soft airy bed with a scatter of tiny dry crinkles, no sweep and no pitch, so it stays natural and quiet. */
   leaves() {
     if (!live()) return; special();
-    noise({ type: 'bandpass', f0: 3600, f1: 2400, q: 0.6, gain: 0.4, dur: 0.5, shape: 'swell', am: [26, 0.8] });
-    noise({ type: 'highpass', f0: 6200, q: 0.7, gain: 0.14, dur: 0.4, at: 0.04, shape: 'swell', am: [19, 0.7] });
+    noise({ type: 'bandpass', f0: 1700, q: 0.4, gain: 0.1, dur: 0.65, shape: 'swell' });
+    noise({ type: 'highpass', f0: 3200, q: 0.4, gain: 0.04, dur: 0.6, at: 0.03, shape: 'swell' });
+    for (let i = 0; i < 15; i++) {
+      const at = 0.02 + Math.random() * 0.5;
+      const bell = 0.4 + Math.sin((Math.PI * at) / 0.55); // louder in the middle, softer at the edges
+      noise({ type: 'bandpass', f0: 1800 + Math.random() * 2800, q: 0.7 + Math.random(), gain: (0.04 + Math.random() * 0.09) * bell, dur: 0.02 + Math.random() * 0.035, at });
+    }
   },
   /** NAILED IT: a warm two-note chime and a stamp thud. */
   nailed() {
