@@ -257,6 +257,12 @@ export const play = {
         noise({ type: 'bandpass', f0: 1500, q: 0.8, gain: 0.35, dur: 0.4, shape: 'flat' });
     }
   },
+  /** A soft rustle of leaves when a plant is touched. */
+  leaves() {
+    if (!live()) return; special();
+    noise({ type: 'bandpass', f0: 3600, f1: 2400, q: 0.6, gain: 0.4, dur: 0.5, shape: 'swell', am: [26, 0.8] });
+    noise({ type: 'highpass', f0: 6200, q: 0.7, gain: 0.14, dur: 0.4, at: 0.04, shape: 'swell', am: [19, 0.7] });
+  },
   /** NAILED IT: a warm two-note chime and a stamp thud. */
   nailed() {
     if (!live()) return; special();

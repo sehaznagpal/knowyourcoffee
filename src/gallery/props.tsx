@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { play } from '../audio/sound';
 import { sketch, type Pt } from '../art/character/sketch';
 import { WORLD_W, FLOOR_Y, FRAME_TOP_MIN, rng } from './layout';
 
@@ -28,14 +29,44 @@ const rot = (pts: Pt[], deg: number, [ox, oy]: Pt): Pt[] => {
   return pts.map(([x, y]) => [ox + (x - ox) * c - (y - oy) * s, oy + (x - ox) * s + (y - oy) * c]);
 };
 
+/** A plant: hover it (or tap it on a phone) and its leaves shake, with a soft rustle. */
 export function Plant({ seed = 1 }: { seed?: number }) {
   const leaf: Pt[] = [[60, 142], [50, 110], [44, 70], [54, 28], [64, 68], [70, 108]];
   const angles = [-52, -26, 0, 24, 50];
-  const shapes: Shape[] = [
-    ...angles.map((a, i) => ({ d: closed(rot(leaf, a, [60, 142]), seed * 10 + i, 24), fill: PAPER, w: 4 })),
-    { d: closed([[28, 140], [92, 140], [84, 198], [36, 198]], seed * 10 + 9), fill: INK, w: 5 },
-  ];
-  return <Art width={120} height={200} shapes={shapes} />;
+  const leaves = angles.map((a, i) => closed(rot(leaf, a, [60, 142]), seed * 10 + i, 24));
+  const pot = closed([[28, 140], [92, 140], [84, 198], [36, 198]], seed * 10 + 9);
+  const [shaking, setShaking] = useState(false);
+  const timer = useRef(0);
+  const shake = () => {
+    play.leaves();
+    if (shaking) return;
+    setShaking(true);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setShaking(false), 800);
+  };
+  const E = 3;
+  const layer = (edge: boolean) => (
+    <>
+      {leaves.map((d, i) => (
+        <g key={i} className="leaf" style={{ '--dir': i % 2 ? 1 : -1, '--i': i } as CSSProperties}>
+          <path d={d} fill={edge ? BEIGE : PAPER} stroke={edge ? BEIGE : INK} strokeWidth={edge ? 4 + 2 * E : 4} strokeLinejoin="round" strokeLinecap="round" />
+        </g>
+      ))}
+      <path d={pot} fill={edge ? BEIGE : INK} stroke={edge ? BEIGE : INK} strokeWidth={edge ? 5 + 2 * E : 5} strokeLinejoin="round" strokeLinecap="round" />
+    </>
+  );
+  return (
+    <span
+      className={`plant${shaking ? ' is-shaking' : ''}`}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') shake(); }}
+      onPointerDown={(e) => { if (e.pointerType !== 'mouse') shake(); }}
+    >
+      <svg width={120} height={200} viewBox="0 0 120 200" style={{ overflow: 'visible', display: 'block' }} aria-hidden="true">
+        {layer(true)}
+        {layer(false)}
+      </svg>
+    </span>
+  );
 }
 
 export function Bench() {
@@ -49,13 +80,27 @@ export function Bench() {
 }
 
 // A pendant lamp that hangs from a bracket just below the top band, so nothing is drawn under the search or the map.
+// Hover it (or tap it on a phone) and a neat blue glow lights up just around the shade, behind it.
 export function Lamp({ drop = 90 }: { drop?: number }) {
+  const [lit, setLit] = useState(false);
+  const shade = closed([[8, drop], [92, drop], [70, drop - 44], [30, drop - 44]], 42);
   return (
-    <Art width={100} height={drop + 10} shapes={[
-      { d: closed([[40, FRAME_TOP_MIN - 4], [60, FRAME_TOP_MIN - 4], [60, FRAME_TOP_MIN + 4], [40, FRAME_TOP_MIN + 4]], 43, 30), fill: INK, w: 3 },
-      { d: open([[50, FRAME_TOP_MIN], [50, drop - 44]], 41, 200), w: 3 },
-      { d: closed([[8, drop], [92, drop], [70, drop - 44], [30, drop - 44]], 42), fill: PAPER },
-    ]} />
+    <div
+      className={`lamp${lit ? ' is-lit' : ''}`}
+      style={{ width: 100, height: drop + 10 }}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') setLit(true); }}
+      onPointerLeave={(e) => { if (e.pointerType === 'mouse') setLit(false); }}
+      onPointerDown={(e) => { if (e.pointerType !== 'mouse') setLit((v) => !v); }}
+    >
+      <svg className="lamp-glow" width={100} height={drop + 10} viewBox={`0 0 100 ${drop + 10}`} style={{ overflow: 'visible' }} aria-hidden="true">
+        <path d={shade} fill="#8fe5ff" stroke="#8fe5ff" strokeWidth={11} strokeLinejoin="round" />
+      </svg>
+      <Art width={100} height={drop + 10} shapes={[
+        { d: closed([[40, FRAME_TOP_MIN - 4], [60, FRAME_TOP_MIN - 4], [60, FRAME_TOP_MIN + 4], [40, FRAME_TOP_MIN + 4]], 43, 30), fill: INK, w: 3 },
+        { d: open([[50, FRAME_TOP_MIN], [50, drop - 44]], 41, 200), w: 3 },
+        { d: shade, fill: PAPER },
+      ]} style={{ position: 'relative' }} />
+    </div>
   );
 }
 
