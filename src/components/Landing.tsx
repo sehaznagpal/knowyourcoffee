@@ -7,6 +7,8 @@ type Props = { onStart: () => void; zooming: boolean };
 
 // Door box in frame px, read from reference/landing.png.
 const DOOR = { left: 632, top: 312, width: 136, height: 336 };
+// The blue "by sehaz nagpal" sign in the café window, in frame px (read from reference/landing.png).
+const SIGN = { left: 482, top: 326, width: 78, height: 74 };
 const CHAR_H = 215; // the scale of the café chairs: she is a little taller than the chair backs
 const FEET = 700; // the pavement
 const HOME_X = 574; // between the A-frame sign and the door
@@ -46,6 +48,15 @@ export function Landing({ onStart, zooming }: Props) {
       <div className={`landing-char${phase === 'in' ? ' is-in' : ''}`} style={{ left: (phase === 'idle' ? HOME_X : DOOR_X) - CHAR_H * 0.2, top: FEET - CHAR_H, transitionDuration: phase === 'walk' || phase === 'in' ? `${WALK_MS}ms` : '0ms' }} aria-hidden="true">
         <AnimatedCharacter state={phase === 'walk' ? 'walk' : phase === 'in' ? 'idle' : 'idle'} facing={1} height={CHAR_H} steps />
       </div>
+      <a
+        className="sign-link"
+        href="https://sehaznagpal.vercel.app"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Sehaz Nagpal's portfolio (opens in a new tab)"
+        style={SIGN}
+        onClick={(e) => e.stopPropagation()}
+      />
       <p className="landing-caption">tap on the door to start.</p>
       <button
         type="button"
