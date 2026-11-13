@@ -1,6 +1,7 @@
 {
   "name": "Know Your Coffee",
   "short_name": "Know Your Coffee",
+  "description": "A walkable coffee gallery that shows what's in 18 popular drinks, layer by layer. Designed and built by Sehaz Nagpal, product designer.",
   "icons": [
     {
       "src": "/icon-192.png?v=2",

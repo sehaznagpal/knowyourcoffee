@@ -43,11 +43,17 @@ export function Landing({ onStart, zooming }: Props) {
 
   return (
     <div className={`landing${zooming ? ' zooming' : ''}`}>
+      <h1 className="sr-only">Know Your Coffee</h1>
       <div className="landing-art" dangerouslySetInnerHTML={{ __html: landing }} />
       <p className="landing-sign">never sure what coffee to order? welcome to the coffee tour to walk around, understand what goes in each cup, and make your next order easy!</p>
       <div className={`landing-char${phase === 'in' ? ' is-in' : ''}`} style={{ left: (phase === 'idle' ? HOME_X : DOOR_X) - CHAR_H * 0.2, top: FEET - CHAR_H, transitionDuration: phase === 'walk' || phase === 'in' ? `${WALK_MS}ms` : '0ms' }} aria-hidden="true">
         <AnimatedCharacter state={phase === 'walk' ? 'walk' : phase === 'in' ? 'idle' : 'idle'} facing={1} height={CHAR_H} steps />
       </div>
+      <p className="landing-credit">
+        made by <a href="https://sehaznagpal.vercel.app" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>Sehaz Nagpal</a>
+        {' \u00b7 '}
+        <a href="https://sehaznagpal.vercel.app/case-study/know-your-coffee" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>case study</a>
+      </p>
       <a
         className="sign-link"
         href="https://sehaznagpal.vercel.app"

@@ -93,6 +93,7 @@ export function Walkthrough({ onClose, onStep, touch }: { onClose: () => void; o
       <div ref={noteEl} className="wt-note" style={{ left: note.left, top: note.top, width: NOTE_W, transition: reduced() ? 'none' : 'left 250ms ease, top 250ms ease' }}>
         {side ? <i className={`wt-arrow wt-arrow-${side}`} style={side === 'top' || side === 'bottom' ? { left: Math.max(18, Math.min(NOTE_W - 18, arrow)) } : { top: Math.max(18, Math.min(noteH - 18, arrow)) }} /> : null}
         <p>{touch && 'touch' in step ? step.touch : step.text}</p>
+        {i === STEPS.length - 1 ? <p className="wt-credit">made by <a href="https://sehaznagpal.vercel.app" target="_blank" rel="noopener noreferrer">Sehaz Nagpal</a></p> : null}
         <div className="wt-foot">
           <span className="wt-dots">{i + 1} / {STEPS.length}</span>
           <button type="button" className="wt-skip" onClick={close}>skip</button>

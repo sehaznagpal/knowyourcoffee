@@ -488,3 +488,6 @@ button.map-tick:focus-visible::after { display: block; }
   filter: drop-shadow(0 0 5px #8fe5ff) drop-shadow(0 0 14px rgba(143, 229, 255, 0.65)); }
 .lamp.is-lit .lamp-glow { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .plant.is-shaking .leaf { animation: none; } .lamp-glow { transition: none; } }
+
+.wt-note .wt-credit { font: 300 14px/1.3 'Excon', sans-serif; text-transform: none; }
+.wt-note .wt-credit a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }

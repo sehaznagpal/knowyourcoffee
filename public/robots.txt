@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://knowyourcoffeebysehaz.vercel.app/sitemap.xml

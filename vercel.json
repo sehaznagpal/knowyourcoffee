@@ -1,3 +1,8 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/((?!robots\\.txt|sitemap\\.xml|og-image\\.png|favicon|apple-touch-icon|icon-|site\\.webmanifest|audio/|assets/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
